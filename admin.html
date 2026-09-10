@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css?v=mobile-contrast-2">
+  <link rel="stylesheet" href="css/styles.css?v=storico-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -56,6 +56,7 @@
       <button data-tab="registrations"><i class="fas fa-list-check"></i> Iscrizioni</button>
       <button data-tab="settings"><i class="fas fa-sliders"></i> Impostazioni</button>
       <button data-tab="exports"><i class="fas fa-file-export"></i> Riepiloghi</button>
+      <button data-tab="history"><i class="fas fa-clock-rotate-left"></i> Storico</button>
     </nav>
 
     <section id="tab-event" class="tab card">
@@ -342,6 +343,36 @@
       </details>
     </section>
 
+    <section id="tab-history" class="tab card hidden">
+      <h2>Storico</h2>
+      <p class="muted">Controlla tutte le gare salvate e lo storico di partecipazione degli atleti.</p>
+      <div class="history-switcher" role="tablist" aria-label="Sezioni storico">
+        <button id="historyEventsBtn" class="active" type="button"><i class="fas fa-flag-checkered"></i> Gare</button>
+        <button id="historyAthletesBtn" type="button"><i class="fas fa-users"></i> Atleti</button>
+      </div>
+
+      <div id="historyEventsPanel">
+        <div class="history-toolbar">
+          <input id="historyEventSearch" type="search" placeholder="Cerca gara...">
+          <select id="historyEventFilter">
+            <option value="all">Tutte le gare</option>
+            <option value="published">Pubblicate</option>
+            <option value="draft">Non pubblicate</option>
+            <option value="archived">Archiviate</option>
+          </select>
+        </div>
+        <div class="table-wrap history-table-wrap"><table class="history-table"><thead><tr><th>Gara</th><th>Data gara</th><th>Stato</th><th>Partecipano</th><th>Non partecipano</th><th>In attesa</th><th>Totale</th><th>Azioni</th></tr></thead><tbody id="historyEventsBody"></tbody></table></div>
+      </div>
+
+      <div id="historyAthletesPanel" class="hidden">
+        <div class="history-toolbar">
+          <input id="historyAthleteSearch" type="search" placeholder="Cerca atleta...">
+          <select id="historyAthleteCategory"><option value="all">Tutte le categorie</option></select>
+        </div>
+        <div class="table-wrap history-table-wrap"><table class="history-table"><thead><tr><th>Atleta</th><th>Categoria</th><th>Gare presenti</th><th>Gare fatte</th><th>Non partecipate</th><th>Senza risposta</th><th>Partecipazione</th></tr></thead><tbody id="historyAthletesBody"></tbody></table></div>
+      </div>
+    </section>
+
     <section id="tab-exports" class="tab card hidden">
       <h2>Riepiloghi</h2>
       <p class="muted">Qui trovi statistiche, file Excel e riepilogo WhatsApp della gara selezionata.</p>
@@ -404,7 +435,7 @@
 </main>
 
 <div id="toast" class="toast"></div>
-<script type="module" src="js/admin.js?v=mobile-def-2"></script>
+<script type="module" src="js/admin.js?v=storico-1"></script>
 <script type="module" src="js/admin-config.js?v=mobile-def-2"></script>
 <script type="module" src="js/telegram.js"></script>
 

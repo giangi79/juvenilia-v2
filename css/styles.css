@@ -4200,3 +4200,26 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
   #athletesBody tr:nth-child(odd),#registrationsBody tr:nth-child(odd){border-color:#355a78!important}
   #athletesBody tr:nth-child(even),#registrationsBody tr:nth-child(even){border-color:#5f87a6!important}
 }
+
+/* Storico gare e atleti */
+.history-switcher{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.history-switcher button{min-width:150px;background:#17324a;border:1px solid #355a78}
+.history-switcher button.active{background:#0b78c6;border-color:#55b8f2;box-shadow:0 0 0 2px rgba(85,184,242,.16)}
+.history-toolbar{display:flex;gap:12px;align-items:center;margin:12px 0 16px}
+.history-toolbar input{flex:1;min-width:180px}.history-toolbar select{min-width:190px}
+.history-table td,.history-table th{vertical-align:middle}
+.history-status{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:.78rem;font-weight:800;white-space:nowrap}
+.history-status.published{background:#164d39;color:#9ef0c8}.history-status.draft{background:#55451d;color:#ffe59b}.history-status.archived{background:#4a2f3a;color:#ffc2d1}
+.history-number{font-weight:800;text-align:center}.history-percent{font-weight:900;color:#8ed8ff}
+.history-actions{display:flex;gap:6px;flex-wrap:wrap}.history-actions button{padding:7px 10px;font-size:.82rem}
+@media(max-width:1100px){
+ .history-toolbar{flex-direction:column;align-items:stretch}.history-toolbar select{min-width:0;width:100%}
+ .history-table-wrap{overflow-x:visible!important}
+ .history-table,.history-table tbody,.history-table tr,.history-table td{display:block;width:100%!important;min-width:0!important}
+ .history-table thead{display:none}.history-table tr{margin:0 0 14px;border:1px solid #355a78;border-radius:14px;overflow:hidden;padding:7px}
+ .history-table td{display:grid!important;grid-template-columns:minmax(110px,40%) minmax(0,60%);gap:10px;padding:8px 10px!important;border:0!important;overflow-wrap:anywhere}
+ .history-table td::before{content:attr(data-label);font-weight:800;color:#8ed8ff}
+ .history-table tr:nth-child(odd),.history-table tr:nth-child(odd) td{background:#142b40!important}
+ .history-table tr:nth-child(even),.history-table tr:nth-child(even) td{background:#294b68!important}
+ .history-actions{justify-content:flex-start}.history-number{text-align:left}
+}

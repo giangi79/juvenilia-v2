@@ -81,6 +81,7 @@ function openAdminTab(name){
   const target=$('tab-'+name);
   if(target)target.classList.remove('hidden');
   if(name==='settings')openSettingsPanel('config');
+  if(name==='history')loadHistory();
 }
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>openAdminTab(b.dataset.tab));
 
@@ -861,3 +862,64 @@ document.querySelector('[data-tab="timers"]')?.addEventListener('click',()=>{
 
 // Nessun caricamento automatico prima dell'autenticazione:
  // le scadenze vengono caricate solo dopo login Admin o quando si apre la scheda.
+
+
+// Storico gare e partecipazione atleti
+let historyRegistrations=[],historyConfig=[];
+function historyEventStatus(e){
+  if(e.is_archived)return {key:'archived',label:'ARCHIVIATA'};
+  if(e.is_published)return {key:'published',label:'PUBBLICATA'};
+  return {key:'draft',label:'NON PUBBLICATA'};
+}
+function historyEventDays(eventId){
+  const row=historyConfig.find(x=>x.event_id===eventId&&x.key==='event_days');
+  const days=Array.isArray(row?.value)?row.value:[];
+  return days.filter(Boolean).join(' · ')||'—';
+}
+function addHistoryCell(tr,label,value,className=''){
+  const td=document.createElement('td');td.dataset.label=label;if(className)td.className=className;
+  if(value instanceof Node)td.append(value);else td.textContent=value;tr.append(td);return td;
+}
+async function loadHistory(){
+  if(!$('historyEventsBody'))return;
+  const [{data:ev,error:ee},{data:rr,error:re},{data:cc,error:ce}]=await Promise.all([
+    db.from('v2_events').select('*').order('created_at',{ascending:false}),
+    db.from('v2_event_registrations').select('id,event_id,athlete_id,status,athlete:v2_athletes(id,full_name,category,is_active)'),
+    db.from('v2_event_config').select('event_id,key,value').eq('key','event_days')
+  ]);
+  if(ee||re||ce)return toast((ee||re||ce).message);
+  events=ev||events;historyRegistrations=rr||[];historyConfig=cc||[];
+  renderHistoryEvents();renderHistoryAthletes();
+}
+function renderHistoryEvents(){
+  const body=$('historyEventsBody');if(!body)return;body.replaceChildren();
+  const q=clean($('historyEventSearch')?.value).toLocaleLowerCase('it');const filter=$('historyEventFilter')?.value||'all';
+  events.filter(e=>{
+    const st=historyEventStatus(e);return (!q||e.title.toLocaleLowerCase('it').includes(q))&&(filter==='all'||st.key===filter);
+  }).forEach(e=>{
+    const regs=historyRegistrations.filter(r=>r.event_id===e.id),yes=regs.filter(r=>r.status==='yes').length,no=regs.filter(r=>r.status==='no').length,pending=regs.filter(r=>r.status==='pending').length;
+    const tr=document.createElement('tr');addHistoryCell(tr,'Gara',e.title);addHistoryCell(tr,'Data gara',historyEventDays(e.id));
+    const st=historyEventStatus(e),badge=document.createElement('span');badge.className=`history-status ${st.key}`;badge.textContent=st.label;addHistoryCell(tr,'Stato',badge);
+    addHistoryCell(tr,'Partecipano',String(yes),'history-number');addHistoryCell(tr,'Non partecipano',String(no),'history-number');addHistoryCell(tr,'In attesa',String(pending),'history-number');addHistoryCell(tr,'Totale',String(regs.length),'history-number');
+    const acts=document.createElement('div');acts.className='history-actions';
+    const manage=document.createElement('button');manage.type='button';manage.textContent='Gestisci';manage.onclick=async()=>{await selectAdminEvent(e.id);openAdminTab('event')};acts.append(manage);
+    if(e.is_published&&!e.is_archived){const pub=document.createElement('button');pub.type='button';pub.className='secondary';pub.textContent='Apri';pub.onclick=()=>window.open(`index.html?gara=${encodeURIComponent(e.slug)}`,'_blank','noopener');acts.append(pub)}
+    addHistoryCell(tr,'Azioni',acts);body.append(tr);
+  });
+}
+function renderHistoryAthletes(){
+  const body=$('historyAthletesBody');if(!body)return;body.replaceChildren();
+  const select=$('historyAthleteCategory');if(select&&select.options.length<=1){standardCategories.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;select.append(o)})}
+  const q=clean($('historyAthleteSearch')?.value).toLocaleLowerCase('it'),cat=select?.value||'all';
+  const map=new Map();
+  historyRegistrations.forEach(r=>{const a=r.athlete;if(!a)return;let x=map.get(a.id);if(!x){x={athlete:a,total:0,yes:0,no:0,pending:0};map.set(a.id,x)}x.total++;if(r.status==='yes')x.yes++;else if(r.status==='no')x.no++;else x.pending++});
+  // Include anche atleti senza storico gare.
+  athletes.forEach(a=>{if(!map.has(a.id))map.set(a.id,{athlete:a,total:0,yes:0,no:0,pending:0})});
+  [...map.values()].filter(x=>(!q||x.athlete.full_name.toLocaleLowerCase('it').includes(q))&&(cat==='all'||clean(x.athlete.category).toUpperCase()===cat)).sort((a,b)=>b.yes-a.yes||a.athlete.full_name.localeCompare(b.athlete.full_name,'it')).forEach(x=>{
+    const tr=document.createElement('tr');addHistoryCell(tr,'Atleta',x.athlete.full_name);addHistoryCell(tr,'Categoria',x.athlete.category||'—');addHistoryCell(tr,'Gare presenti',String(x.total),'history-number');addHistoryCell(tr,'Gare fatte',String(x.yes),'history-number');addHistoryCell(tr,'Non partecipate',String(x.no),'history-number');addHistoryCell(tr,'Senza risposta',String(x.pending),'history-number');
+    const pct=x.total?Math.round(x.yes/x.total*100):0;addHistoryCell(tr,'Partecipazione',`${pct}%`,'history-percent');body.append(tr);
+  });
+}
+$('historyEventsBtn')?.addEventListener('click',()=>{$('historyEventsBtn').classList.add('active');$('historyAthletesBtn').classList.remove('active');$('historyEventsPanel').classList.remove('hidden');$('historyAthletesPanel').classList.add('hidden')});
+$('historyAthletesBtn')?.addEventListener('click',()=>{$('historyAthletesBtn').classList.add('active');$('historyEventsBtn').classList.remove('active');$('historyAthletesPanel').classList.remove('hidden');$('historyEventsPanel').classList.add('hidden')});
+$('historyEventSearch')?.addEventListener('input',renderHistoryEvents);$('historyEventFilter')?.addEventListener('change',renderHistoryEvents);$('historyAthleteSearch')?.addEventListener('input',renderHistoryAthletes);$('historyAthleteCategory')?.addEventListener('change',renderHistoryAthletes);
