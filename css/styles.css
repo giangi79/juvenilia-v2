@@ -3948,3 +3948,171 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
     top:9px;
   }
 }
+
+/* Mobile/tablet admin definitivo: nessuna tabella orizzontale in Atleti e Iscrizioni */
+@media (max-width: 1100px){
+  html,body{max-width:100%;overflow-x:hidden!important}
+  #adminApp, #adminApp main, #adminApp section{max-width:100%;min-width:0}
+
+  #tab-athletes .table-wrap,
+  #tab-registrations .table-wrap{
+    width:100%!important;
+    max-width:100%!important;
+    overflow:visible!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+
+  #tab-athletes table,
+  #tab-registrations table{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    table-layout:auto!important;
+    background:transparent!important;
+  }
+
+  #tab-athletes thead,
+  #tab-registrations thead{display:none!important}
+
+  #athletesBody,
+  #registrationsBody{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+
+  #athletesBody tr,
+  #registrationsBody tr{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0 0 14px!important;
+    border:1px solid #4c6377!important;
+    border-radius:14px!important;
+    overflow:hidden!important;
+    background:#2a3b4e!important;
+    box-sizing:border-box!important;
+  }
+
+  #athletesBody td,
+  #registrationsBody td{
+    display:grid!important;
+    grid-template-columns:minmax(105px, 34%) minmax(0, 1fr)!important;
+    gap:10px!important;
+    align-items:center!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+    padding:10px 12px!important;
+    border-bottom:1px solid #3e5367!important;
+    text-align:left!important;
+    overflow:visible!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+  }
+
+  #athletesBody td:last-child,
+  #registrationsBody td:last-child{border-bottom:0!important}
+
+  #athletesBody td::before,
+  #registrationsBody td::before{
+    position:static!important;
+    width:auto!important;
+    display:block!important;
+    color:#a8dadc!important;
+    font-size:.72rem!important;
+    font-weight:900!important;
+    letter-spacing:.04em!important;
+    text-transform:uppercase!important;
+    line-height:1.25!important;
+  }
+
+  #athletesBody td:nth-child(1)::before{content:"Atleta"}
+  #athletesBody td:nth-child(2)::before{content:"Categoria"}
+  #athletesBody td:nth-child(3)::before{content:"Sesso"}
+  #athletesBody td:nth-child(4)::before{content:"Attivo"}
+  #athletesBody td:nth-child(5)::before{content:"Azioni"}
+
+  #registrationsBody td:nth-child(1)::before{content:"Seleziona"}
+  #registrationsBody td:nth-child(2)::before{content:"Atleta"}
+  #registrationsBody td:nth-child(3)::before{content:"Categoria"}
+  #registrationsBody td:nth-child(4)::before{content:"Stato"}
+  #registrationsBody td:nth-child(5)::before{content:"Accompagnatore"}
+  #registrationsBody td:nth-child(6)::before{content:"Bloccato"}
+  #registrationsBody td:nth-child(7)::before{content:"Azioni"}
+
+  #athletesBody td:first-child,
+  #registrationsBody td:nth-child(2){
+    background:#203e5c!important;
+    font-size:1rem!important;
+    font-weight:900!important;
+  }
+
+  #athletesBody .athlete-category-select,
+  #registrationsBody select,
+  #registrationsBody input:not([type="checkbox"]){
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+
+  #athletesBody .athlete-actions-cell,
+  #registrationsBody .row-actions{
+    display:grid!important;
+    grid-template-columns:minmax(105px,34%) minmax(0,1fr)!important;
+    gap:10px!important;
+    min-width:0!important;
+    width:100%!important;
+  }
+
+  #athletesBody .athlete-actions-cell::before,
+  #registrationsBody .row-actions::before{
+    grid-column:1!important;
+  }
+
+  #athletesBody .athlete-actions-cell > *,
+  #registrationsBody .row-actions > *{
+    grid-column:2!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    white-space:normal!important;
+  }
+
+  #registrationsBody .registration-select{
+    width:24px!important;
+    height:24px!important;
+    justify-self:start!important;
+  }
+
+  .registration-tools,
+  .registration-tools .actions{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+  .registration-tools .actions{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    gap:8px!important;
+  }
+  .registration-tools .actions button{width:100%!important;min-width:0!important}
+}
+
+@media (max-width: 480px){
+  #athletesBody td,
+  #registrationsBody td,
+  #athletesBody .athlete-actions-cell,
+  #registrationsBody .row-actions{
+    grid-template-columns:92px minmax(0,1fr)!important;
+    gap:8px!important;
+    padding:9px 10px!important;
+  }
+}
