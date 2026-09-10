@@ -3783,3 +3783,168 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
 @media(max-width:850px){
   .telegram-toggle-grid{grid-template-columns:1fr}
 }
+
+/* Mobile admin: Atleti e Iscrizioni senza scorrimento orizzontale */
+@media (max-width: 760px){
+  /* Le due tabelle principali diventano schede verticali. */
+  #athletesBody,
+  #registrationsBody,
+  #athletesBody tr,
+  #registrationsBody tr,
+  #athletesBody td,
+  #registrationsBody td{
+    display:block;
+    width:100%;
+    box-sizing:border-box;
+  }
+
+  #athletesBody,
+  #registrationsBody{
+    background:transparent!important;
+  }
+
+  #athletesBody tr,
+  #registrationsBody tr{
+    margin:0 0 14px;
+    border:1px solid #4c6377;
+    border-radius:14px;
+    overflow:hidden;
+    background:#2a3b4e;
+    box-shadow:0 6px 14px rgba(4,15,26,.18);
+  }
+
+  #athletesBody tr:last-child,
+  #registrationsBody tr:last-child{margin-bottom:0}
+
+  #athletesBody td,
+  #registrationsBody td{
+    min-width:0!important;
+    padding:10px 12px 10px 46%!important;
+    position:relative;
+    border-bottom:1px solid #3e5367!important;
+    text-align:left!important;
+    overflow-wrap:anywhere;
+  }
+
+  #athletesBody td:last-child,
+  #registrationsBody td:last-child{border-bottom:0!important}
+
+  #athletesBody td::before,
+  #registrationsBody td::before{
+    position:absolute;
+    left:12px;
+    top:11px;
+    width:40%;
+    color:#a8dadc;
+    font-size:.72rem;
+    font-weight:900;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    line-height:1.25;
+  }
+
+  #athletesBody td:nth-child(1)::before{content:"Atleta"}
+  #athletesBody td:nth-child(2)::before{content:"Categoria"}
+  #athletesBody td:nth-child(3)::before{content:"Sesso"}
+  #athletesBody td:nth-child(4)::before{content:"Attivo"}
+  #athletesBody td:nth-child(5)::before{content:"Azioni"}
+
+  #registrationsBody td:nth-child(1)::before{content:"Seleziona"}
+  #registrationsBody td:nth-child(2)::before{content:"Atleta"}
+  #registrationsBody td:nth-child(3)::before{content:"Categoria"}
+  #registrationsBody td:nth-child(4)::before{content:"Stato"}
+  #registrationsBody td:nth-child(5)::before{content:"Accompagnatore"}
+  #registrationsBody td:nth-child(6)::before{content:"Bloccato"}
+  #registrationsBody td:nth-child(7)::before{content:"Azioni"}
+
+  #athletesBody td:first-child,
+  #registrationsBody td:nth-child(2){
+    background:#203e5c!important;
+    font-size:1rem;
+  }
+
+  #athletesBody .athlete-category-cell,
+  #registrationsBody td,
+  #athletesBody .athlete-actions-cell,
+  #registrationsBody .row-actions{
+    min-width:0!important;
+  }
+
+  #athletesBody .athlete-category-select{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+  }
+
+  #athletesBody .athlete-actions-cell,
+  #registrationsBody .row-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    padding-left:12px!important;
+    padding-top:34px!important;
+  }
+
+  #athletesBody .athlete-actions-cell::before,
+  #registrationsBody .row-actions::before{
+    width:auto;
+    right:12px;
+  }
+
+  #athletesBody .athlete-actions-cell button,
+  #registrationsBody .row-actions button{
+    flex:1 1 130px;
+    width:auto;
+    min-height:44px;
+    white-space:normal;
+  }
+
+  #registrationsBody .registration-select{
+    width:22px;
+    height:22px;
+  }
+
+  /* Non serve più il contenitore scrollabile per queste tabelle su telefono. */
+  section#tab-athletes .table-wrap,
+  section#tab-registrations .table-wrap{
+    overflow:visible!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+
+  section#tab-athletes table,
+  section#tab-registrations table{
+    display:block;
+    width:100%!important;
+    min-width:0!important;
+    background:transparent!important;
+  }
+
+  section#tab-athletes table thead,
+  section#tab-registrations table thead{
+    display:none;
+  }
+
+  .registration-tools .actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .registration-tools .actions button{width:100%}
+}
+
+@media (max-width: 420px){
+  #athletesBody td,
+  #registrationsBody td{
+    padding-left:12px!important;
+    padding-top:32px!important;
+  }
+  #athletesBody td::before,
+  #registrationsBody td::before{
+    width:auto;
+    right:12px;
+    top:9px;
+  }
+}
