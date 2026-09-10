@@ -4116,3 +4116,45 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
     padding:9px 10px!important;
   }
 }
+
+/* Righe alternate atleti - maggiore leggibilita */
+/* Pagina pubblica */
+#registrations > .athlete:nth-child(odd){
+  background:#223448!important;
+}
+#registrations > .athlete:nth-child(even){
+  background:#2b4055!important;
+}
+#registrations > .athlete:hover{
+  background:#355069!important;
+}
+
+/* Admin: Atleti e Iscrizioni */
+#athletesBody tr:nth-child(odd) td,
+#registrationsBody tr:nth-child(odd) td{
+  background:#26394c!important;
+}
+#athletesBody tr:nth-child(even) td,
+#registrationsBody tr:nth-child(even) td{
+  background:#30465b!important;
+}
+#athletesBody tr:hover td,
+#registrationsBody tr:hover td{
+  background:#3a556d!important;
+}
+
+/* Su mobile alterna l'intera scheda, mantenendo tutte le celle coerenti */
+@media (max-width:1100px){
+  #athletesBody tr:nth-child(odd),
+  #registrationsBody tr:nth-child(odd),
+  #athletesBody tr:nth-child(odd) td,
+  #registrationsBody tr:nth-child(odd) td{
+    background:#26394c!important;
+  }
+  #athletesBody tr:nth-child(even),
+  #registrationsBody tr:nth-child(even),
+  #athletesBody tr:nth-child(even) td,
+  #registrationsBody tr:nth-child(even) td{
+    background:#30465b!important;
+  }
+}
