@@ -4158,3 +4158,45 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
     background:#30465b!important;
   }
 }
+
+/* Mobile: contrasto marcato tra un atleta e il successivo */
+@media (max-width:1100px){
+  /* Pagina pubblica */
+  #registrations > .athlete:nth-child(odd){
+    background:#142b40!important;
+    border-color:#355a78!important;
+  }
+  #registrations > .athlete:nth-child(even){
+    background:#294b68!important;
+    border-color:#5f87a6!important;
+  }
+
+  /* Admin: ogni atleta/iscrizione e' una scheda con un unico colore */
+  #athletesBody tr:nth-child(odd),
+  #athletesBody tr:nth-child(odd) td,
+  #registrationsBody tr:nth-child(odd),
+  #registrationsBody tr:nth-child(odd) td{
+    background:#142b40!important;
+  }
+  #athletesBody tr:nth-child(even),
+  #athletesBody tr:nth-child(even) td,
+  #registrationsBody tr:nth-child(even),
+  #registrationsBody tr:nth-child(even) td{
+    background:#294b68!important;
+  }
+  #athletesBody tr:nth-child(odd),
+  #registrationsBody tr:nth-child(odd){border-color:#355a78!important}
+  #athletesBody tr:nth-child(even),
+  #registrationsBody tr:nth-child(even){border-color:#5f87a6!important}
+}
+
+
+/* Mobile: contrasto marcato tra un atleta e il successivo */
+@media (max-width:1100px){
+  #registrations > .athlete:nth-child(odd){background:#142b40!important;border-color:#355a78!important}
+  #registrations > .athlete:nth-child(even){background:#294b68!important;border-color:#5f87a6!important}
+  #athletesBody tr:nth-child(odd),#athletesBody tr:nth-child(odd) td,#registrationsBody tr:nth-child(odd),#registrationsBody tr:nth-child(odd) td{background:#142b40!important}
+  #athletesBody tr:nth-child(even),#athletesBody tr:nth-child(even) td,#registrationsBody tr:nth-child(even),#registrationsBody tr:nth-child(even) td{background:#294b68!important}
+  #athletesBody tr:nth-child(odd),#registrationsBody tr:nth-child(odd){border-color:#355a78!important}
+  #athletesBody tr:nth-child(even),#registrationsBody tr:nth-child(even){border-color:#5f87a6!important}
+}
