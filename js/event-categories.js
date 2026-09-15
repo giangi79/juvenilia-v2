@@ -30,19 +30,36 @@ function render(selected=CATEGORIES){
   });
 }
 function selected(){return [...document.querySelectorAll('#eventCategoriesChecks input:checked')].map(x=>x.value)}
-async function loadForEvent(){
-  const eventId=$('eventSelect')?.value;
-  if(!eventId){loadedAllowed=[...CATEGORIES];render(loadedAllowed);return}
-  const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',['allowed_categories','show_info_box','show_companion','show_category_costs']);
-  if(error){toast('Errore caricamento impostazioni gara: '+error.message);return}
-  const map=Object.fromEntries((data||[]).map(x=>[x.key,x.value]));
-  loadedAllowed=Array.isArray(map.allowed_categories)&&map.allowed_categories.length?map.allowed_categories.map(clean).filter(c=>CATEGORIES.includes(c)):[...CATEGORIES];
-  render(loadedAllowed);
-  // Questi tre valori devono rispettare il database anche dopo refresh.
-  // Se la chiave non esiste, per le nuove gare il default corretto è OFF.
+function applyPublicSwitches(map){
   if($('cfgInfoVisible'))$('cfgInfoVisible').checked=map.show_info_box===true;
   if($('cfgCompanion'))$('cfgCompanion').checked=map.show_companion===true;
   if($('advShowCosts'))$('advShowCosts').checked=map.show_category_costs===true;
+}
+async function loadForEvent(){
+  const eventId=$('eventSelect')?.value;
+  if(!eventId){loadedAllowed=[...CATEGORIES];render(loadedAllowed);return}
+  const keys=['allowed_categories','show_info_box','show_companion','show_category_costs'];
+  const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',keys);
+  if(error){toast('Errore caricamento impostazioni gara: '+error.message);return}
+  const map=Object.fromEntries((data||[]).map(x=>[x.key,x.value]));
+
+  // Se una delle tre opzioni pubbliche non esiste nel DB, la materializziamo come OFF.
+  // In questo modo un refresh non può ricadere sul vecchio default implicito = true.
+  const publicDefaults=['show_info_box','show_companion','show_category_costs'];
+  const missing=publicDefaults.filter(key=>!Object.prototype.hasOwnProperty.call(map,key));
+  if(missing.length){
+    const rows=missing.map(key=>({event_id:eventId,key,value:false,is_public:true}));
+    const {error:defaultError}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
+    if(defaultError){toast('Errore salvataggio impostazioni iniziali: '+defaultError.message);return}
+    missing.forEach(key=>{map[key]=false});
+  }
+
+  loadedAllowed=Array.isArray(map.allowed_categories)&&map.allowed_categories.length?map.allowed_categories.map(clean).filter(c=>CATEGORIES.includes(c)):[...CATEGORIES];
+  render(loadedAllowed);
+  applyPublicSwitches(map);
+  // loadConfig() dell'Admin può completarsi nello stesso istante: riapplichiamo i valori
+  // appena letti dal DB dopo il completamento del ciclo corrente.
+  setTimeout(()=>applyPublicSwitches(map),100);
 }
 async function saveAndSync(eventId,allowed){
   const {error:cfgError}=await db.from('v2_event_config').upsert({event_id:eventId,key:'allowed_categories',value:allowed,is_public:false},{onConflict:'event_id,key'});
