@@ -64,6 +64,10 @@ async function applyNewEventDefaults(eventId){
   ];
   const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
   if(error)throw error;
+  const {data, error:verifyError}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',['show_info_box','show_companion','show_category_costs']);
+  if(verifyError)throw verifyError;
+  const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));
+  if(map.show_info_box!==false||map.show_companion!==false||map.show_category_costs!==false)throw new Error('Le impostazioni iniziali della nuova gara non sono state salvate correttamente');
 }
 
 function showNewEventDefaultsInUI(){
@@ -119,9 +123,13 @@ if(saveBtn){
       const result=await saveAndSync(eventId,allowed);
       if(result.added||result.removed)toast(`Categorie ammesse aggiornate: ${result.added} atleti aggiunti, ${result.removed} rimossi`);
       else toast('Categorie ammesse salvate');
-      if(wasCreating)showNewEventDefaultsInUI();
       if($('eventSelect')&&$('eventSelect').value!==eventId)$('eventSelect').value=eventId;
       await $('eventSelect')?.onchange?.();
+      if(wasCreating){
+        // Il reload dell'Admin può terminare dopo il salvataggio dei default: applica lo stato UI solo alla fine.
+        showNewEventDefaultsInUI();
+        setTimeout(showNewEventDefaultsInUI,150);
+      }
       document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}));
     }catch(err){toast('Errore gestione gara: '+(err?.message||err))}
   };
