@@ -66,10 +66,16 @@ async function applyNewEventDefaults(eventId){
   if(error)throw error;
 }
 
+function showNewEventDefaultsInUI(){
+  if($('cfgInfoVisible'))$('cfgInfoVisible').checked=false;
+  if($('cfgCompanion'))$('cfgCompanion').checked=false;
+  if($('advShowCosts'))$('advShowCosts').checked=false;
+}
+
 ensureUI();
 $('selectAllEventCategories')?.addEventListener('click',()=>render(CATEGORIES));
 $('clearEventCategories')?.addEventListener('click',()=>render([]));
-$('newEventBtn')?.addEventListener('click',()=>{loadedAllowed=[...CATEGORIES];render(loadedAllowed)});
+$('newEventBtn')?.addEventListener('click',()=>{loadedAllowed=[...CATEGORIES];render(loadedAllowed);showNewEventDefaultsInUI()});
 $('eventSelect')?.addEventListener('change',()=>setTimeout(loadForEvent,0));
 ['registrationsEventSelect','configEventSelect','advancedEventSelect','exportEventSelect'].forEach(id=>$(id)?.addEventListener('change',()=>setTimeout(loadForEvent,0)));
 document.addEventListener('juvenilia:event-changed',()=>setTimeout(loadForEvent,0));
@@ -83,7 +89,13 @@ if(saveBtn){
     const removed=loadedAllowed.filter(c=>!allowed.includes(c));
     const eventIdBefore=$('eventSelect')?.value||'';
     const wasCreating=(saveBtn.textContent||'').toLowerCase().includes('crea');
-    if(eventIdBefore&&removed.length){
+    let existingEventIds=new Set();
+    if(wasCreating){
+      const {data,error}=await db.from('v2_events').select('id');
+      if(error)return toast('Errore preparazione nuova gara: '+error.message);
+      existingEventIds=new Set((data||[]).map(x=>x.id));
+    }
+    if(eventIdBefore&&removed.length&&!wasCreating){
       const {data:regs,error}=await db.from('v2_event_registrations').select('status,category_override,athlete:v2_athletes(category)').eq('event_id',eventIdBefore);
       if(error)return toast('Errore controllo categorie: '+error.message);
       const affected=(regs||[]).filter(r=>removed.includes(clean(r.category_override||r.athlete?.category)));
@@ -93,13 +105,22 @@ if(saveBtn){
       }
     }
     await originalSave?.call(saveBtn,event);
-    const eventId=$('eventSelect')?.value;
-    if(!eventId||(wasCreating&&eventId===eventIdBefore))return;
+    let eventId=$('eventSelect')?.value||'';
+    if(wasCreating){
+      const {data:newEvents,error}=await db.from('v2_events').select('id,created_at').order('created_at',{ascending:false});
+      if(error)return toast('Gara creata, ma errore impostazioni iniziali: '+error.message);
+      const created=(newEvents||[]).find(x=>!existingEventIds.has(x.id));
+      if(!created)return toast('Gara creata, ma non riesco a identificare la nuova gara per applicare le impostazioni iniziali');
+      eventId=created.id;
+    }
+    if(!eventId)return;
     try{
       if(wasCreating)await applyNewEventDefaults(eventId);
       const result=await saveAndSync(eventId,allowed);
       if(result.added||result.removed)toast(`Categorie ammesse aggiornate: ${result.added} atleti aggiunti, ${result.removed} rimossi`);
       else toast('Categorie ammesse salvate');
+      if(wasCreating)showNewEventDefaultsInUI();
+      if($('eventSelect')&&$('eventSelect').value!==eventId)$('eventSelect').value=eventId;
       await $('eventSelect')?.onchange?.();
       document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}));
     }catch(err){toast('Errore gestione gara: '+(err?.message||err))}
