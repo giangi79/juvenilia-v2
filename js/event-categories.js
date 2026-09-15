@@ -1,0 +1,108 @@
+import { db } from './supabase.js';
+import { toast } from './ui.js';
+
+const CATEGORIES=['GIOVANISSIMI','ESORDIENTI','R12','RAGAZZI','ALLIEVI','JUNIOR','SENIOR'];
+const $=id=>document.getElementById(id);
+const clean=v=>String(v??'').trim().toUpperCase();
+let loadedAllowed=[...CATEGORIES];
+
+function ensureUI(){
+  if($('eventCategoriesChecks'))return;
+  const description=$('eventDescriptionInput')?.closest('label');
+  if(!description)return;
+  const card=document.createElement('div');card.className='wide event-categories-card';
+  card.innerHTML=`<div class="event-categories-head"><div><strong>Categorie ammesse</strong><small>Lascia selezionate solo le categorie che possono partecipare a questa gara.</small></div><div class="event-categories-actions"><button id="selectAllEventCategories" type="button" class="secondary">Tutte</button><button id="clearEventCategories" type="button" class="secondary">Nessuna</button></div></div><div id="eventCategoriesChecks" class="event-categories-grid"></div>`;
+  description.insertAdjacentElement('afterend',card);
+  const style=document.createElement('style');style.textContent=`
+    .event-categories-card{background:#10283c;border:1px solid #355a78;border-radius:14px;padding:16px}.event-categories-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:13px}.event-categories-head strong{display:block;font-size:1rem;margin-bottom:4px}.event-categories-head small{display:block;color:#a9c3d8;line-height:1.35}.event-categories-actions{display:flex;gap:7px;flex-wrap:wrap}.event-categories-actions button{padding:7px 11px;font-size:.82rem}.event-categories-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}.event-category-option{display:flex!important;align-items:center;gap:9px;background:#17354f;border:1px solid #3c6483;border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:800;margin:0!important}.event-category-option:hover{border-color:#67bff1;background:#1c405e}.event-category-option input{width:19px;height:19px;accent-color:#19a7e0;flex:0 0 auto}@media(max-width:700px){.event-categories-head{flex-direction:column}.event-categories-actions{width:100%}.event-categories-actions button{flex:1}.event-categories-grid{grid-template-columns:1fr 1fr}}@media(max-width:430px){.event-categories-grid{grid-template-columns:1fr}}`;
+  document.head.append(style);
+}
+
+function render(selected=CATEGORIES){
+  const host=$('eventCategoriesChecks');if(!host)return;
+  const chosen=new Set(selected.map(clean));
+  host.replaceChildren();
+  CATEGORIES.forEach(category=>{
+    const label=document.createElement('label');label.className='event-category-option';
+    const input=document.createElement('input');input.type='checkbox';input.value=category;input.checked=chosen.has(category);
+    const text=document.createElement('span');text.textContent=category;
+    label.append(input,text);host.append(label);
+  });
+}
+function selected(){return [...document.querySelectorAll('#eventCategoriesChecks input:checked')].map(x=>x.value)}
+async function loadForEvent(){
+  const eventId=$('eventSelect')?.value;
+  if(!eventId){loadedAllowed=[...CATEGORIES];render(loadedAllowed);return}
+  const {data,error}=await db.from('v2_event_config').select('value').eq('event_id',eventId).eq('key','allowed_categories').maybeSingle();
+  if(error){toast('Errore caricamento categorie: '+error.message);return}
+  loadedAllowed=Array.isArray(data?.value)&&data.value.length?data.value.map(clean).filter(c=>CATEGORIES.includes(c)):[...CATEGORIES];
+  render(loadedAllowed);
+}
+async function saveAndSync(eventId,allowed){
+  const {error:cfgError}=await db.from('v2_event_config').upsert({event_id:eventId,key:'allowed_categories',value:allowed,is_public:false},{onConflict:'event_id,key'});
+  if(cfgError)throw cfgError;
+  const [{data:athletes,error:ae},{data:regs,error:re}]=await Promise.all([
+    db.from('v2_athletes').select('id,category').eq('is_active',true),
+    db.from('v2_event_registrations').select('id,athlete_id,category_override,athlete:v2_athletes(category)').eq('event_id',eventId)
+  ]);
+  if(ae)throw ae;if(re)throw re;
+  const ok=new Set(allowed);
+  const remove=(regs||[]).filter(r=>!ok.has(clean(r.category_override||r.athlete?.category)));
+  if(remove.length){const {error}=await db.from('v2_event_registrations').delete().in('id',remove.map(r=>r.id));if(error)throw error}
+  const kept=new Set((regs||[]).filter(r=>!remove.some(x=>x.id===r.id)).map(r=>r.athlete_id));
+  const add=(athletes||[]).filter(a=>ok.has(clean(a.category))&&!kept.has(a.id)).map(a=>({event_id:eventId,athlete_id:a.id,status:'pending'}));
+  if(add.length){const {error}=await db.from('v2_event_registrations').upsert(add,{onConflict:'event_id,athlete_id',ignoreDuplicates:true});if(error)throw error}
+  loadedAllowed=[...allowed];
+  return {added:add.length,removed:remove.length};
+}
+
+ensureUI();
+$('selectAllEventCategories')?.addEventListener('click',()=>render(CATEGORIES));
+$('clearEventCategories')?.addEventListener('click',()=>render([]));
+$('newEventBtn')?.addEventListener('click',()=>{loadedAllowed=[...CATEGORIES];render(loadedAllowed)});
+$('eventSelect')?.addEventListener('change',()=>setTimeout(loadForEvent,0));
+['registrationsEventSelect','configEventSelect','advancedEventSelect','exportEventSelect'].forEach(id=>$(id)?.addEventListener('change',()=>setTimeout(loadForEvent,0)));
+document.addEventListener('juvenilia:event-changed',()=>setTimeout(loadForEvent,0));
+
+const saveBtn=$('saveEventBtn');
+if(saveBtn){
+  const originalSave=saveBtn.onclick;
+  saveBtn.onclick=async event=>{
+    const allowed=selected();
+    if(!allowed.length)return toast('Seleziona almeno una categoria ammessa');
+    const removed=loadedAllowed.filter(c=>!allowed.includes(c));
+    const eventIdBefore=$('eventSelect')?.value||'';
+    const wasCreating=(saveBtn.textContent||'').toLowerCase().includes('crea');
+    if(eventIdBefore&&removed.length){
+      const {data:regs,error}=await db.from('v2_event_registrations').select('status,category_override,athlete:v2_athletes(category)').eq('event_id',eventIdBefore);
+      if(error)return toast('Errore controllo categorie: '+error.message);
+      const affected=(regs||[]).filter(r=>removed.includes(clean(r.category_override||r.athlete?.category)));
+      if(affected.length){
+        const answered=affected.filter(r=>r.status!=='pending').length;
+        if(!confirm(`Stai disabilitando: ${removed.join(', ')}.\n\nSaranno rimosse ${affected.length} iscrizioni${answered?`, di cui ${answered} con risposta già registrata`:''}.\n\nContinuare?`))return;
+      }
+    }
+    await originalSave?.call(saveBtn,event);
+    const eventId=$('eventSelect')?.value;
+    if(!eventId||(wasCreating&&eventId===eventIdBefore))return;
+    try{
+      const result=await saveAndSync(eventId,allowed);
+      if(result.added||result.removed)toast(`Categorie ammesse aggiornate: ${result.added} atleti aggiunti, ${result.removed} rimossi`);
+      else toast('Categorie ammesse salvate');
+      await $('eventSelect')?.onchange?.();
+      document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}));
+    }catch(err){toast('Errore gestione categorie: '+(err?.message||err))}
+  };
+}
+
+const enrollBtn=$('enrollAllBtn');
+if(enrollBtn){
+  enrollBtn.onclick=async()=>{
+    const eventId=$('eventSelect')?.value;if(!eventId)return toast('Seleziona una gara');
+    try{const result=await saveAndSync(eventId,loadedAllowed);toast(result.added?`${result.added} atleti aggiunti`:'Tutti gli atleti delle categorie ammesse sono già presenti');await $('eventSelect')?.onchange?.();document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}))}
+    catch(err){toast('Errore aggiunta atleti: '+(err?.message||err))}
+  };
+}
+
+render(CATEGORIES);
+setTimeout(loadForEvent,0);
