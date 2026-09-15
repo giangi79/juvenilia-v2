@@ -56,6 +56,16 @@ async function saveAndSync(eventId,allowed){
   return {added:add.length,removed:remove.length};
 }
 
+async function applyNewEventDefaults(eventId){
+  const rows=[
+    {event_id:eventId,key:'show_info_box',value:false,is_public:true},
+    {event_id:eventId,key:'show_companion',value:false,is_public:true},
+    {event_id:eventId,key:'show_category_costs',value:false,is_public:true}
+  ];
+  const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
+  if(error)throw error;
+}
+
 ensureUI();
 $('selectAllEventCategories')?.addEventListener('click',()=>render(CATEGORIES));
 $('clearEventCategories')?.addEventListener('click',()=>render([]));
@@ -86,12 +96,13 @@ if(saveBtn){
     const eventId=$('eventSelect')?.value;
     if(!eventId||(wasCreating&&eventId===eventIdBefore))return;
     try{
+      if(wasCreating)await applyNewEventDefaults(eventId);
       const result=await saveAndSync(eventId,allowed);
       if(result.added||result.removed)toast(`Categorie ammesse aggiornate: ${result.added} atleti aggiunti, ${result.removed} rimossi`);
       else toast('Categorie ammesse salvate');
       await $('eventSelect')?.onchange?.();
       document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}));
-    }catch(err){toast('Errore gestione categorie: '+(err?.message||err))}
+    }catch(err){toast('Errore gestione gara: '+(err?.message||err))}
   };
 }
 
