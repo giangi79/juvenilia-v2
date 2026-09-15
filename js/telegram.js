@@ -1,4 +1,4 @@
-import './event-categories.js';
+import './event-categories.js?v=defaults-3';
 import { db } from './supabase.js';
 import { toast } from './ui.js';
 
