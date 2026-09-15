@@ -33,10 +33,16 @@ function selected(){return [...document.querySelectorAll('#eventCategoriesChecks
 async function loadForEvent(){
   const eventId=$('eventSelect')?.value;
   if(!eventId){loadedAllowed=[...CATEGORIES];render(loadedAllowed);return}
-  const {data,error}=await db.from('v2_event_config').select('value').eq('event_id',eventId).eq('key','allowed_categories').maybeSingle();
-  if(error){toast('Errore caricamento categorie: '+error.message);return}
-  loadedAllowed=Array.isArray(data?.value)&&data.value.length?data.value.map(clean).filter(c=>CATEGORIES.includes(c)):[...CATEGORIES];
+  const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',['allowed_categories','show_info_box','show_companion','show_category_costs']);
+  if(error){toast('Errore caricamento impostazioni gara: '+error.message);return}
+  const map=Object.fromEntries((data||[]).map(x=>[x.key,x.value]));
+  loadedAllowed=Array.isArray(map.allowed_categories)&&map.allowed_categories.length?map.allowed_categories.map(clean).filter(c=>CATEGORIES.includes(c)):[...CATEGORIES];
   render(loadedAllowed);
+  // Questi tre valori devono rispettare il database anche dopo refresh.
+  // Se la chiave non esiste, per le nuove gare il default corretto è OFF.
+  if($('cfgInfoVisible'))$('cfgInfoVisible').checked=map.show_info_box===true;
+  if($('cfgCompanion'))$('cfgCompanion').checked=map.show_companion===true;
+  if($('advShowCosts'))$('advShowCosts').checked=map.show_category_costs===true;
 }
 async function saveAndSync(eventId,allowed){
   const {error:cfgError}=await db.from('v2_event_config').upsert({event_id:eventId,key:'allowed_categories',value:allowed,is_public:false},{onConflict:'event_id,key'});
@@ -64,7 +70,7 @@ async function applyNewEventDefaults(eventId){
   ];
   const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
   if(error)throw error;
-  const {data, error:verifyError}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',['show_info_box','show_companion','show_category_costs']);
+  const {data,error:verifyError}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',['show_info_box','show_companion','show_category_costs']);
   if(verifyError)throw verifyError;
   const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));
   if(map.show_info_box!==false||map.show_companion!==false||map.show_category_costs!==false)throw new Error('Le impostazioni iniziali della nuova gara non sono state salvate correttamente');
@@ -125,11 +131,7 @@ if(saveBtn){
       else toast('Categorie ammesse salvate');
       if($('eventSelect')&&$('eventSelect').value!==eventId)$('eventSelect').value=eventId;
       await $('eventSelect')?.onchange?.();
-      if(wasCreating){
-        // Il reload dell'Admin può terminare dopo il salvataggio dei default: applica lo stato UI solo alla fine.
-        showNewEventDefaultsInUI();
-        setTimeout(showNewEventDefaultsInUI,150);
-      }
+      if(wasCreating){showNewEventDefaultsInUI();setTimeout(showNewEventDefaultsInUI,150)}
       document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}));
     }catch(err){toast('Errore gestione gara: '+(err?.message||err))}
   };
