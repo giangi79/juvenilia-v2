@@ -38,13 +38,12 @@ function applyPublicSwitches(map){
 async function loadForEvent(){
   const eventId=$('eventSelect')?.value;
   if(!eventId){loadedAllowed=[...CATEGORIES];render(loadedAllowed);return}
+  const {data:{session}}=await db.auth.getSession();
+  if(!session)return;
   const keys=['allowed_categories','show_info_box','show_companion','show_category_costs'];
   const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',keys);
   if(error){toast('Errore caricamento impostazioni gara: '+error.message);return}
   const map=Object.fromEntries((data||[]).map(x=>[x.key,x.value]));
-
-  // Se una delle tre opzioni pubbliche non esiste nel DB, la materializziamo come OFF.
-  // In questo modo un refresh non può ricadere sul vecchio default implicito = true.
   const publicDefaults=['show_info_box','show_companion','show_category_costs'];
   const missing=publicDefaults.filter(key=>!Object.prototype.hasOwnProperty.call(map,key));
   if(missing.length){
@@ -53,13 +52,9 @@ async function loadForEvent(){
     if(defaultError){toast('Errore salvataggio impostazioni iniziali: '+defaultError.message);return}
     missing.forEach(key=>{map[key]=false});
   }
-
   loadedAllowed=Array.isArray(map.allowed_categories)&&map.allowed_categories.length?map.allowed_categories.map(clean).filter(c=>CATEGORIES.includes(c)):[...CATEGORIES];
   render(loadedAllowed);
   applyPublicSwitches(map);
-  // loadConfig() dell'Admin può completarsi nello stesso istante: riapplichiamo i valori
-  // appena letti dal DB dopo il completamento del ciclo corrente.
-  setTimeout(()=>applyPublicSwitches(map),100);
 }
 async function saveAndSync(eventId,allowed){
   const {error:cfgError}=await db.from('v2_event_config').upsert({event_id:eventId,key:'allowed_categories',value:allowed,is_public:false},{onConflict:'event_id,key'});
@@ -87,12 +82,7 @@ async function applyNewEventDefaults(eventId){
   ];
   const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
   if(error)throw error;
-  const {data,error:verifyError}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',['show_info_box','show_companion','show_category_costs']);
-  if(verifyError)throw verifyError;
-  const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));
-  if(map.show_info_box!==false||map.show_companion!==false||map.show_category_costs!==false)throw new Error('Le impostazioni iniziali della nuova gara non sono state salvate correttamente');
 }
-
 function showNewEventDefaultsInUI(){
   if($('cfgInfoVisible'))$('cfgInfoVisible').checked=false;
   if($('cfgCompanion'))$('cfgCompanion').checked=false;
@@ -106,6 +96,14 @@ $('newEventBtn')?.addEventListener('click',()=>{loadedAllowed=[...CATEGORIES];re
 $('eventSelect')?.addEventListener('change',()=>setTimeout(loadForEvent,0));
 ['registrationsEventSelect','configEventSelect','advancedEventSelect','exportEventSelect'].forEach(id=>$(id)?.addEventListener('change',()=>setTimeout(loadForEvent,0)));
 document.addEventListener('juvenilia:event-changed',()=>setTimeout(loadForEvent,0));
+
+db.auth.onAuthStateChange((event,session)=>{
+  if(session&&(event==='SIGNED_IN'||event==='INITIAL_SESSION')){
+    // admin.js carica la configurazione dopo il login: sincronizziamo gli switch
+    // solo dopo che quel caricamento è terminato, usando i valori reali del DB.
+    setTimeout(loadForEvent,700);
+  }
+});
 
 const saveBtn=$('saveEventBtn');
 if(saveBtn){
@@ -148,8 +146,9 @@ if(saveBtn){
       else toast('Categorie ammesse salvate');
       if($('eventSelect')&&$('eventSelect').value!==eventId)$('eventSelect').value=eventId;
       await $('eventSelect')?.onchange?.();
-      if(wasCreating){showNewEventDefaultsInUI();setTimeout(showNewEventDefaultsInUI,150)}
+      if(wasCreating)showNewEventDefaultsInUI();
       document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}));
+      setTimeout(loadForEvent,100);
     }catch(err){toast('Errore gestione gara: '+(err?.message||err))}
   };
 }
@@ -164,4 +163,4 @@ if(enrollBtn){
 }
 
 render(CATEGORIES);
-setTimeout(loadForEvent,0);
+setTimeout(loadForEvent,900);
