@@ -1,7 +1,12 @@
 import { db } from './supabase.js';
 
 function slug(){const p=new URLSearchParams(location.search);return p.get('gara')||p.get('event')||null}
+function hidePublicPayment(){
+  const box=document.getElementById('paymentBox');
+  if(box){box.replaceChildren();box.classList.add('hidden');box.setAttribute('aria-hidden','true')}
+}
 async function renderHeader(){
+  hidePublicPayment();
   const s=slug();if(!s)return;
   const {data,error}=await db.rpc('v2_get_public_event',{p_slug:s});
   if(error||!data)return;
@@ -18,9 +23,13 @@ async function renderHeader(){
     if(dateText){const d=document.createElement('span');d.className='event-header-date';d.innerHTML='<i class="fas fa-calendar-days" aria-hidden="true"></i> ';d.append(document.createTextNode(dateText));sub.append(d)}
     if(!location&&!dateText)sub.textContent='';
   }
+  hidePublicPayment();
 }
 window.addEventListener('popstate',()=>setTimeout(renderHeader,120));
 document.addEventListener('juvenilia:public-event-rendered',renderHeader);
+const paymentBox=document.getElementById('paymentBox');
+if(paymentBox)new MutationObserver(hidePublicPayment).observe(paymentBox,{childList:true,subtree:true});
 setTimeout(renderHeader,120);
 setTimeout(renderHeader,500);
-const style=document.createElement('style');style.textContent=`.hero>div:first-child{min-width:0}.hero #eventTitle{margin-bottom:10px!important}.hero .event-place-date{display:flex!important;align-items:center;gap:9px 20px;flex-wrap:wrap;margin:0!important;min-height:28px;color:#fff!important;opacity:1!important}.hero .event-place-date span{display:inline-flex;align-items:center;gap:8px;font-size:1rem;line-height:1.3;font-weight:800;color:#fff!important;opacity:1!important}.hero .event-place-date i{color:#ffd166!important;font-size:.95em}@media(max-width:600px){.hero .event-place-date{flex-direction:column;align-items:flex-start;gap:6px}.hero .event-place-date span{font-size:.92rem}}`;document.head.append(style);
+setTimeout(hidePublicPayment,900);
+const style=document.createElement('style');style.textContent=`#paymentBox{display:none!important}.hero>div:first-child{min-width:0}.hero #eventTitle{margin-bottom:10px!important}.hero .event-place-date{display:flex!important;align-items:center;gap:9px 20px;flex-wrap:wrap;margin:0!important;min-height:28px;color:#fff!important;opacity:1!important}.hero .event-place-date span{display:inline-flex;align-items:center;gap:8px;font-size:1rem;line-height:1.3;font-weight:800;color:#fff!important;opacity:1!important}.hero .event-place-date i{color:#ffd166!important;font-size:.95em}@media(max-width:600px){.hero .event-place-date{flex-direction:column;align-items:flex-start;gap:6px}.hero .event-place-date span{font-size:.92rem}}`;document.head.append(style);
