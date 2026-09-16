@@ -1,0 +1,45 @@
+/* Evidenzia i giorni scelti nel riepilogo pubblico */
+#confirmed .weekday-summary{
+  display:inline-flex!important;
+  align-items:center;
+  margin-left:6px!important;
+  padding:4px 9px!important;
+  border-radius:999px!important;
+  background:#d73b3e!important;
+  border:1px solid #ff7477!important;
+  color:#fff!important;
+  font-weight:900!important;
+  letter-spacing:.025em;
+  box-shadow:0 3px 10px rgba(215,59,62,.25);
+}
+
+/* Frecce di navigazione sempre visibili durante lo scorrimento */
+.scroll-top-btn,
+.scroll-bottom-btn{
+  position:fixed!important;
+  right:18px!important;
+  width:48px!important;
+  height:48px!important;
+  border-radius:50%!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  background:linear-gradient(135deg,#245a96,#447a9b)!important;
+  color:#fff!important;
+  box-shadow:0 9px 25px rgba(10,31,49,.32)!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  transform:none!important;
+  z-index:9000!important;
+}
+.scroll-top-btn{bottom:78px!important}
+.scroll-bottom-btn{bottom:18px!important}
+.scroll-top-btn:hover,.scroll-bottom-btn:hover{filter:brightness(1.08)}
+
+@media(max-width:540px){
+  .scroll-top-btn,.scroll-bottom-btn{right:12px!important;width:46px!important;height:46px!important}
+  .scroll-top-btn{bottom:72px!important}
+  .scroll-bottom-btn{bottom:16px!important}
+  #confirmed .weekday-summary{margin-left:4px!important;padding:3px 8px!important}
+}
