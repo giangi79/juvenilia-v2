@@ -20,7 +20,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css?v=mobile-contrast-2">
+  <link rel="stylesheet" href="css/styles.css?v=mobile-contrast-3">
+  <style>
+    /* Contrasto garantito dell'intestazione iscrizioni, anche su Safari/iPhone */
+    .registrations-heading{background:#24394d!important;border:1px solid #3e5367!important;border-radius:18px!important;padding:18px 20px!important;box-shadow:0 12px 28px rgba(4,15,26,.16)!important}
+    .registrations-heading .section-kicker{color:#7fe3ee!important}
+    .registrations-heading h2{color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.18)!important}
+    .registrations-heading p{color:#d9e8f2!important;opacity:1!important}
+    @media(max-width:760px){.registrations-heading{margin:24px 0 14px!important;padding:16px!important}.registrations-heading h2{font-size:1.55rem!important;line-height:1.15!important}.registrations-heading p{font-size:.95rem!important;line-height:1.45!important}}
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
