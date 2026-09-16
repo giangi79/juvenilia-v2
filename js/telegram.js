@@ -2,7 +2,7 @@ import './event-categories.js?v=defaults-3';
 import './race-days-admin.js?v=giorni-gara-1';
 import './event-header-admin.js?v=1';
 import './admin-mobile-cards.js?v=1';
-import './admin-unlock-reset.js?v=5';
+import './admin-unlock-reset.js?v=6';
 import { db } from './supabase.js';
 import { toast } from './ui.js';
 
@@ -10,11 +10,16 @@ const $=id=>document.getElementById(id);
 const KEYS=['telegram_status_enabled','telegram_deadline_enabled'];
 
 function selectedEventId(){return $('exportEventSelect')?.value || $('eventSelect')?.value || null;}
-function currentEvent(){const id=selectedEventId();return window.__juveniliaEvents?.find?.(e=>e.id===id)||null;}
-async function configMap(eventId){const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',KEYS);if(error)throw error;return Object.fromEntries((data||[]).map(r=>[r.key,r.value]));}
-async function loadTelegramSettings(){const id=selectedEventId();if(!id)return;try{const cfg=await configMap(id);if($('telegramStatusEnabled'))$('telegramStatusEnabled').checked=cfg.telegram_status_enabled!==false;if($('telegramDeadlineEnabled'))$('telegramDeadlineEnabled').checked=cfg.telegram_deadline_enabled!==false;}catch(e){console.warn(e)}}
-async function saveTelegramSettings(){const id=selectedEventId();if(!id)return toast('Seleziona una gara');const rows=[{event_id:id,key:'telegram_status_enabled',value:$('telegramStatusEnabled')?.checked!==false,is_public:false},{event_id:id,key:'telegram_deadline_enabled',value:$('telegramDeadlineEnabled')?.checked!==false,is_public:false}];const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});if(error)return toast(error.message);toast('Impostazioni Telegram salvate');}
-async function callTelegram(body){const {data:{session}}=await db.auth.getSession();if(!session)return toast('Sessione admin non valida');const url='https://jnfnfszekfstuoiemkgf.supabase.co/functions/v1/telegram-dispatch';const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify(body)});const text=await r.text();let out;try{out=JSON.parse(text)}catch{out={error:text}}if(!r.ok||out?.error)throw new Error(out?.error||`HTTP ${r.status}`);return out;}
-async function telegramAction(action){const eventId=selectedEventId();if(!eventId)return toast('Seleziona una gara');const result=$('telegramResult');if(result)result.textContent='Invio in corso...';try{const out=await callTelegram({action,event_id:eventId});if(result)result.textContent=out?.message||'Operazione completata';toast(out?.message||'Operazione Telegram completata')}catch(e){if(result)result.textContent=e.message;toast(e.message)}}
-function bind(){if($('telegramSaveSettingsBtn'))$('telegramSaveSettingsBtn').onclick=saveTelegramSettings;if($('telegramTestBtn'))$('telegramTestBtn').onclick=()=>telegramAction('test');if($('telegramSummaryBtn'))$('telegramSummaryBtn').onclick=()=>telegramAction('summary');if($('telegramResetFlagsBtn'))$('telegramResetFlagsBtn').onclick=()=>telegramAction('reset_deadline_flags');$('exportEventSelect')?.addEventListener('change',loadTelegramSettings);$('eventSelect')?.addEventListener('change',loadTelegramSettings);loadTelegramSettings();}
-setTimeout(bind,400);
+function setResult(text,isError=false){const el=$('telegramResult');if(!el)return;el.textContent=text||'';el.classList.toggle('error',!!isError);}
+async function loadTelegramSettings(){const eventId=selectedEventId();if(!eventId)return;const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',KEYS);if(error){setResult('Errore caricamento impostazioni Telegram: '+error.message,true);return}const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));$('telegramStatusEnabled').checked=map.telegram_status_enabled===true;$('telegramDeadlineEnabled').checked=map.telegram_deadline_enabled===true;setResult('');}
+async function saveTelegramSettings(){const eventId=selectedEventId();if(!eventId)return toast('Seleziona una gara');const rows=[{event_id:eventId,key:'telegram_status_enabled',value:$('telegramStatusEnabled').checked,is_public:false},{event_id:eventId,key:'telegram_deadline_enabled',value:$('telegramDeadlineEnabled').checked,is_public:false}];const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});if(error){setResult('Errore salvataggio: '+error.message,true);return toast(error.message)}setResult('Impostazioni Telegram salvate.');toast('Impostazioni Telegram salvate');}
+async function invokeTelegram(action){const eventId=selectedEventId();if((action==='manual_summary')&&!eventId){toast('Seleziona una gara');return null}setResult('Invio in corso…');const {data,error}=await db.functions.invoke('telegram-dispatch',{body:{action,event_id:eventId}});if(error){const message=error.message||'Errore Edge Function';setResult(message,true);toast(message);return null}if(data?.error){setResult(data.error,true);toast(data.error);return null}const message=data?.message || 'Operazione Telegram completata.';setResult(message);toast(message);return data;}
+async function resetDeadlineFlags(){const eventId=selectedEventId();if(!eventId)return toast('Seleziona una gara');if(!confirm('Azzera i flag Telegram delle scadenze per questa gara? Le scadenze potranno essere inviate nuovamente dal sistema automatico.'))return;const {data,error}=await db.rpc('v2_reset_telegram_deadline_flags',{p_event_id:eventId});if(error){setResult('Errore reset flag: '+error.message,true);return toast(error.message)}setResult(`Flag scadenze azzerati (${data??0} elementi).`);toast('Flag Telegram scadenze azzerati');}
+$('telegramSaveSettingsBtn')?.addEventListener('click',saveTelegramSettings);
+$('telegramTestBtn')?.addEventListener('click',()=>invokeTelegram('test'));
+$('telegramSummaryBtn')?.addEventListener('click',()=>invokeTelegram('manual_summary'));
+$('telegramResetFlagsBtn')?.addEventListener('click',resetDeadlineFlags);
+$('exportEventSelect')?.addEventListener('change',()=>setTimeout(loadTelegramSettings,50));
+document.addEventListener('juvenilia:event-changed',()=>setTimeout(loadTelegramSettings,80));
+document.querySelector('[data-tab="exports"]')?.addEventListener('click',()=>setTimeout(loadTelegramSettings,50));
+setTimeout(loadTelegramSettings,1000);
