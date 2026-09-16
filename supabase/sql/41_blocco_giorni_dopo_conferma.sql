@@ -68,8 +68,9 @@ revoke all on function public.v2_confirm_registration_with_days(text,uuid,text[]
 grant execute on function public.v2_confirm_registration_with_days(text,uuid,text[]) to anon;
 grant execute on function public.v2_confirm_registration_with_days(text,uuid,text[]) to authenticated;
 
--- La vecchia RPC non deve più permettere al pubblico di cambiare i giorni.
+-- La vecchia RPC non deve più permettere modifiche dei giorni dal frontend.
+-- L'Admin modifica race_days direttamente sulla tabella, protetta da RLS admin.
 revoke execute on function public.v2_set_registration_days(text,uuid,text[]) from anon;
-grant execute on function public.v2_set_registration_days(text,uuid,text[]) to authenticated;
+revoke execute on function public.v2_set_registration_days(text,uuid,text[]) from authenticated;
 
 commit;
