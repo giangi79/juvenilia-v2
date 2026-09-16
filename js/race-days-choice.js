@@ -22,103 +22,14 @@ async function refreshData(){
   render();
 }
 function scheduleRefresh(){clearTimeout(refreshTimer);refreshTimer=setTimeout(refreshData,90)}
-
-function ensureModal(){
-  if($('raceDaysConfirmModal'))return;
-  const modal=document.createElement('div');modal.id='raceDaysConfirmModal';modal.className='race-days-modal hidden';
-  modal.innerHTML=`<div class="race-days-modal-card" role="dialog" aria-modal="true" aria-labelledby="raceDaysModalTitle"><button class="race-days-modal-close" type="button" aria-label="Chiudi">×</button><div class="section-kicker">PARTECIPAZIONE</div><h2 id="raceDaysModalTitle">Scegli i giorni di gara</h2><p id="raceDaysModalAthlete"></p><div id="raceDaysModalChoices" class="race-days-modal-choices"></div><p class="race-days-modal-note">Seleziona almeno un giorno. Dopo la conferma la scelta potrà essere modificata solo dall’amministratore.</p><div class="race-days-modal-actions"><button id="raceDaysModalCancel" type="button" class="secondary">Annulla</button><button id="raceDaysModalConfirm" type="button">Conferma partecipazione</button></div></div>`;
-  document.body.append(modal);
-  modal.querySelector('.race-days-modal-close').onclick=closeModal;
-  $('raceDaysModalCancel').onclick=closeModal;
-  modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
-  $('raceDaysModalConfirm').onclick=confirmParticipation;
-}
-function openModal(reg){
-  ensureModal();pendingReg=reg;
-  $('raceDaysModalAthlete').textContent=reg.full_name;
-  const host=$('raceDaysModalChoices');host.replaceChildren();
-  enabled.forEach(day=>{
-    const label=document.createElement('label');label.className='race-days-modal-option';
-    const input=document.createElement('input');input.type='checkbox';input.value=day;
-    const span=document.createElement('span');span.textContent=day;
-    label.append(input,span);host.append(label);
-  });
-  $('raceDaysConfirmModal').classList.remove('hidden');
-  document.body.classList.add('race-days-modal-open');
-}
-function closeModal(){
-  $('raceDaysConfirmModal')?.classList.add('hidden');document.body.classList.remove('race-days-modal-open');pendingReg=null;
-}
-async function confirmParticipation(){
-  if(!pendingReg||busy)return;
-  const selected=[...document.querySelectorAll('#raceDaysModalChoices input:checked')].map(x=>x.value);
-  if(!selected.length)return toast('Seleziona almeno un giorno di gara');
-  busy=true;$('raceDaysModalConfirm').disabled=true;
-  const reg=pendingReg;
-  try{
-    const {error}=await db.rpc('v2_confirm_registration_with_days',{p_event_slug:slug,p_athlete_id:reg.athlete_id,p_days:selected});
-    if(error){toast(friendly(error.message));return}
-    closeModal();toast('Partecipazione e giorni confermati');
-    try{await db.functions.invoke('telegram-dispatch',{body:{action:'status_now',event_slug:slug,athlete_id:reg.athlete_id,status:'yes'}})}catch{}
-    await refreshData();location.reload();
-  }finally{busy=false;if($('raceDaysModalConfirm'))$('raceDaysModalConfirm').disabled=false}
-}
-function friendly(m){
-  if(String(m).includes('RACE_DAYS_ALREADY_CONFIRMED'))return 'I giorni sono già stati confermati. Può modificarli solo l’amministratore.';
-  if(String(m).includes('SELECT_AT_LEAST_ONE_DAY'))return 'Seleziona almeno un giorno di gara.';
-  if(String(m).includes('INVALID_RACE_DAY'))return 'È stato selezionato un giorno non disponibile.';
-  return m;
-}
-
-function addDayDisplay(row,reg){
-  row.querySelector('.athlete-weekday-choice')?.remove();
-  if(!enabled.length)return;
-  const host=row.querySelector('.athlete-name-cell');if(!host)return;
-  const wrap=document.createElement('div');wrap.className='athlete-weekday-choice';
-  const title=document.createElement('span');title.className='weekday-choice-title';title.textContent='Giorni:';wrap.append(title);
-  const selected=selectedFor(reg.athlete_id);
-  if(selected.length){
-    selected.forEach(day=>{const chip=document.createElement('span');chip.className='weekday-readonly';chip.textContent=short(day);wrap.append(chip)});
-    const lock=document.createElement('span');lock.className='weekday-locked';lock.innerHTML='<i class="fas fa-lock"></i> confermati';wrap.append(lock);
-  }else{
-    const note=document.createElement('small');note.textContent=reg.status==='yes'?'Giorni non indicati':'Verranno scelti premendo PARTECIPA';wrap.append(note);
-  }
-  host.append(wrap);
-}
-function renderSummary(){
-  const confirmed=$('confirmed');if(!confirmed)return;
-  confirmed.querySelectorAll('.pill').forEach(p=>{
-    p.querySelector('.weekday-summary')?.remove();
-    const raw=[...p.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('').trim();
-    const reg=regs.find(r=>raw===r.full_name||raw.startsWith((r.full_name||'')+' —'));
-    const ds=reg?selectedFor(reg.athlete_id):[];
-    if(ds.length){const s=document.createElement('span');s.className='weekday-summary';s.textContent=' · '+ds.map(short).join(' • ');p.append(s)}
-  });
-}
-function render(){
-  document.querySelectorAll('#registrations .athlete').forEach(row=>{
-    const name=row.querySelector('h3')?.textContent?.trim();
-    const reg=regs.find(r=>r.full_name===name);if(reg)addDayDisplay(row,reg);
-  });
-  renderSummary();
-}
-
-const registrations=$('registrations');
-if(registrations){
-  new MutationObserver(scheduleRefresh).observe(registrations,{childList:true});
-  registrations.addEventListener('click',e=>{
-    const yes=e.target.closest('button.registration-choice.yes');if(!yes||!enabled.length)return;
-    const row=yes.closest('.athlete');const name=row?.querySelector('h3')?.textContent?.trim();const reg=regs.find(r=>r.full_name===name);
-    if(!reg)return;
-    e.preventDefault();e.stopImmediatePropagation();
-    if(selectedFor(reg.athlete_id).length||reg.status==='yes')return toast('Partecipazione già confermata. I giorni possono essere modificati solo dall’amministratore.');
-    openModal(reg);
-  },true);
-}
-const confirmed=$('confirmed');if(confirmed)new MutationObserver(()=>requestAnimationFrame(renderSummary)).observe(confirmed,{childList:true});
-window.addEventListener('popstate',scheduleRefresh);
-setTimeout(refreshData,500);
-
-const style=document.createElement('style');style.textContent=`
-.athlete-weekday-choice{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}.weekday-choice-title{font-size:.72rem;font-weight:900;color:#9fc3df;text-transform:uppercase}.weekday-readonly{display:inline-flex;padding:5px 7px;border:1px solid #42c391;border-radius:8px;background:#147653;color:#fff;font-size:.68rem;font-weight:900}.weekday-locked{display:inline-flex;align-items:center;gap:4px;font-size:.66rem;color:#9fc3df;font-weight:800}.athlete-weekday-choice small{width:100%;font-size:.7rem;color:#8da7ba}.weekday-summary{font-weight:900;color:#62d7a6}.race-days-modal{position:fixed;inset:0;z-index:10000;background:rgba(3,12,20,.78);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(5px)}.race-days-modal.hidden{display:none}.race-days-modal-card{position:relative;width:min(560px,100%);background:#10283b;border:1px solid #426681;border-radius:18px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.45)}.race-days-modal-card h2{margin:5px 0}.race-days-modal-card p{color:#b8cada}.race-days-modal-close{position:absolute;right:12px;top:10px;width:38px;height:38px;border:0;background:transparent;color:#fff;font-size:28px}.race-days-modal-choices{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0}.race-days-modal-option{display:flex!important;align-items:center!important;gap:8px!important;margin:0!important;padding:12px!important;border:1px solid #496b86;border-radius:10px;background:#0c2132;cursor:pointer;font-weight:900}.race-days-modal-option input{width:19px!important;height:19px!important;margin:0!important;accent-color:#21b879}.race-days-modal-option:has(input:checked){background:#147653;border-color:#42c391;color:#fff}.race-days-modal-note{font-size:.78rem}.race-days-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.race-days-modal-open{overflow:hidden}@media(max-width:600px){.race-days-modal-choices{grid-template-columns:1fr}.race-days-modal-card{padding:20px 16px}.race-days-modal-actions{flex-direction:column-reverse}.race-days-modal-actions button{width:100%}}`;
-document.head.append(style);
+function ensureModal(){if($('raceDaysConfirmModal'))return;const modal=document.createElement('div');modal.id='raceDaysConfirmModal';modal.className='race-days-modal hidden';modal.innerHTML=`<div class="race-days-modal-card" role="dialog" aria-modal="true" aria-labelledby="raceDaysModalTitle"><button class="race-days-modal-close" type="button" aria-label="Chiudi">×</button><div class="section-kicker">PARTECIPAZIONE</div><h2 id="raceDaysModalTitle">Scegli i giorni di gara</h2><p id="raceDaysModalAthlete"></p><div id="raceDaysModalChoices" class="race-days-modal-choices"></div><p class="race-days-modal-note">Seleziona almeno un giorno. Dopo la conferma la scelta potrà essere modificata solo dall’amministratore.</p><div class="race-days-modal-actions"><button id="raceDaysModalCancel" type="button" class="secondary">Annulla</button><button id="raceDaysModalConfirm" type="button">Conferma partecipazione</button></div></div>`;document.body.append(modal);modal.querySelector('.race-days-modal-close').onclick=closeModal;$('raceDaysModalCancel').onclick=closeModal;modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});$('raceDaysModalConfirm').onclick=confirmParticipation}
+function openModal(reg){ensureModal();pendingReg=reg;$('raceDaysModalAthlete').textContent=reg.full_name;const host=$('raceDaysModalChoices');host.replaceChildren();enabled.forEach(day=>{const label=document.createElement('label');label.className='race-days-modal-option';const input=document.createElement('input');input.type='checkbox';input.value=day;const span=document.createElement('span');span.textContent=day;label.append(input,span);host.append(label)});$('raceDaysConfirmModal').classList.remove('hidden');document.body.classList.add('race-days-modal-open')}
+function closeModal(){$('raceDaysConfirmModal')?.classList.add('hidden');document.body.classList.remove('race-days-modal-open');pendingReg=null}
+async function confirmParticipation(){if(!pendingReg||busy)return;const selected=[...document.querySelectorAll('#raceDaysModalChoices input:checked')].map(x=>x.value);if(!selected.length)return toast('Seleziona almeno un giorno di gara');busy=true;$('raceDaysModalConfirm').disabled=true;const reg=pendingReg;try{const {error}=await db.rpc('v2_confirm_registration_with_days',{p_event_slug:slug,p_athlete_id:reg.athlete_id,p_days:selected});if(error){toast(friendly(error.message));return}closeModal();toast('Partecipazione e giorni confermati');try{await db.functions.invoke('telegram-dispatch',{body:{action:'status_now',event_slug:slug,athlete_id:reg.athlete_id,status:'yes'}})}catch{}await refreshData();location.reload()}finally{busy=false;if($('raceDaysModalConfirm'))$('raceDaysModalConfirm').disabled=false}}
+function friendly(m){if(String(m).includes('RACE_DAYS_ALREADY_CONFIRMED'))return 'I giorni sono già stati confermati. Può modificarli solo l’amministratore.';if(String(m).includes('SELECT_AT_LEAST_ONE_DAY'))return 'Seleziona almeno un giorno di gara.';if(String(m).includes('INVALID_RACE_DAY'))return 'È stato selezionato un giorno non disponibile.';return m}
+function addDayDisplay(row,reg){row.querySelector('.athlete-weekday-choice')?.remove();if(!enabled.length)return;const host=row.querySelector('.athlete-name-cell');if(!host)return;const wrap=document.createElement('div');wrap.className='athlete-weekday-choice';const title=document.createElement('span');title.className='weekday-choice-title';title.textContent='Giorni:';wrap.append(title);const selected=selectedFor(reg.athlete_id);if(selected.length){selected.forEach(day=>{const chip=document.createElement('span');chip.className='weekday-readonly';chip.textContent=short(day);wrap.append(chip)});const lock=document.createElement('span');lock.className='weekday-locked';lock.innerHTML='<i class="fas fa-lock"></i> confermati';wrap.append(lock)}else{const note=document.createElement('small');note.textContent=reg.status==='yes'?'Giorni non indicati':'Verranno scelti premendo PARTECIPA';wrap.append(note)}host.append(wrap)}
+function renderSummary(){const confirmed=$('confirmed');if(!confirmed)return;confirmed.querySelectorAll('.pill').forEach(p=>{p.querySelector('.weekday-summary')?.remove();const raw=[...p.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent).join('').trim();const reg=regs.find(r=>raw===r.full_name||raw.startsWith((r.full_name||'')+' —'));const ds=reg?selectedFor(reg.athlete_id):[];if(ds.length){const s=document.createElement('span');s.className='weekday-summary';s.textContent=' · '+ds.map(short).join(' • ');p.append(s)}})}
+function render(){document.querySelectorAll('#registrations .athlete').forEach(row=>{const name=row.querySelector('h3')?.textContent?.trim();const reg=regs.find(r=>r.full_name===name);if(reg)addDayDisplay(row,reg)});renderSummary()}
+const registrations=$('registrations');if(registrations){new MutationObserver(scheduleRefresh).observe(registrations,{childList:true});registrations.addEventListener('click',e=>{const yes=e.target.closest('button.registration-choice.yes');if(!yes||!enabled.length)return;const row=yes.closest('.athlete');const name=row?.querySelector('h3')?.textContent?.trim();const reg=regs.find(r=>r.full_name===name);if(!reg)return;e.preventDefault();e.stopImmediatePropagation();if(selectedFor(reg.athlete_id).length||reg.status==='yes')return toast('Partecipazione già confermata. I giorni possono essere modificati solo dall’amministratore.');openModal(reg)},true)}
+const confirmed=$('confirmed');if(confirmed)new MutationObserver(()=>requestAnimationFrame(renderSummary)).observe(confirmed,{childList:true});window.addEventListener('popstate',scheduleRefresh);setTimeout(refreshData,500);
+const style=document.createElement('style');style.textContent=`.athlete-weekday-choice{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}.weekday-choice-title{font-size:.72rem;font-weight:900;color:#9fc3df;text-transform:uppercase}.weekday-readonly{display:inline-flex;padding:5px 7px;border:1px solid #42c391;border-radius:8px;background:#147653;color:#fff;font-size:.68rem;font-weight:900}.weekday-locked{display:inline-flex;align-items:center;gap:4px;font-size:.66rem;color:#9fc3df;font-weight:800}.athlete-weekday-choice small{width:100%;font-size:.7rem;color:#8da7ba}.weekday-summary{font-weight:900;color:#ff3b3b}.race-days-modal{position:fixed;inset:0;z-index:10000;background:rgba(3,12,20,.78);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(5px)}.race-days-modal.hidden{display:none}.race-days-modal-card{position:relative;width:min(560px,100%);background:#10283b;border:1px solid #426681;border-radius:18px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.45)}.race-days-modal-card h2{margin:5px 0}.race-days-modal-card p{color:#b8cada}.race-days-modal-close{position:absolute;right:12px;top:10px;width:38px;height:38px;border:0;background:transparent;color:#fff;font-size:28px}.race-days-modal-choices{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0}.race-days-modal-option{display:flex!important;align-items:center!important;gap:8px!important;margin:0!important;padding:12px!important;border:1px solid #496b86;border-radius:10px;background:#0c2132;cursor:pointer;font-weight:900}.race-days-modal-option input{width:19px!important;height:19px!important;margin:0!important;accent-color:#21b879}.race-days-modal-option:has(input:checked){background:#147653;border-color:#42c391;color:#fff}.race-days-modal-note{font-size:.78rem}.race-days-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.race-days-modal-open{overflow:hidden}@media(max-width:600px){.race-days-modal-choices{grid-template-columns:1fr}.race-days-modal-card{padding:20px 16px}.race-days-modal-actions{flex-direction:column-reverse}.race-days-modal-actions button{width:100%}}`;document.head.append(style);
