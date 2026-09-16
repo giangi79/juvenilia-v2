@@ -16,9 +16,11 @@ async function renderHeader(){
     const dateText=typeof cfg.event_date_text==='string'?cfg.event_date_text.trim():'';
     if(location){const l=document.createElement('span');l.className='event-header-location';l.innerHTML='<i class="fas fa-location-dot" aria-hidden="true"></i> ';l.append(document.createTextNode(location));sub.append(l)}
     if(dateText){const d=document.createElement('span');d.className='event-header-date';d.innerHTML='<i class="fas fa-calendar-days" aria-hidden="true"></i> ';d.append(document.createTextNode(dateText));sub.append(d)}
-    if(!location&&!dateText)sub.textContent=e.description||'';
+    if(!location&&!dateText)sub.textContent='';
   }
 }
 window.addEventListener('popstate',()=>setTimeout(renderHeader,120));
-setTimeout(renderHeader,350);
-const style=document.createElement('style');style.textContent=`.event-place-date{display:flex!important;align-items:center;gap:10px 18px;flex-wrap:wrap;margin-top:8px!important}.event-place-date span{display:inline-flex;align-items:center;gap:7px;font-weight:800;color:#fff!important}.event-place-date i{color:#ffd166}@media(max-width:600px){.event-place-date{flex-direction:column;align-items:flex-start;gap:5px}.event-place-date span{font-size:.95rem}}`;document.head.append(style);
+document.addEventListener('juvenilia:public-event-rendered',renderHeader);
+setTimeout(renderHeader,120);
+setTimeout(renderHeader,500);
+const style=document.createElement('style');style.textContent=`.hero>div:first-child{min-width:0}.hero #eventTitle{margin-bottom:10px!important}.hero .event-place-date{display:flex!important;align-items:center;gap:9px 20px;flex-wrap:wrap;margin:0!important;min-height:28px;color:#fff!important;opacity:1!important}.hero .event-place-date span{display:inline-flex;align-items:center;gap:8px;font-size:1rem;line-height:1.3;font-weight:800;color:#fff!important;opacity:1!important}.hero .event-place-date i{color:#ffd166!important;font-size:.95em}@media(max-width:600px){.hero .event-place-date{flex-direction:column;align-items:flex-start;gap:6px}.hero .event-place-date span{font-size:.92rem}}`;document.head.append(style);
