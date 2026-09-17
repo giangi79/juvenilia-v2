@@ -109,7 +109,7 @@ select jsonb_build_object(
     'categories',coalesce((select jsonb_agg(jsonb_build_object(
       'category',ec.category,'total_count',ec.total_count,'yes_count',ec.yes_count
     ) order by ec.category) from event_categories ec where ec.event_id=er.id),'[]'::jsonb)
-  ) order by er.is_archived asc,er.created_at desc) from event_rows er),'[]'::jsonb),
+  ) order by er.created_at desc) from event_rows er),'[]'::jsonb),
   'athletes',coalesce((select jsonb_agg(jsonb_build_object(
     'full_name',ar.full_name,
     'category',ar.category,
