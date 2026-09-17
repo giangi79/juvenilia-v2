@@ -85,7 +85,7 @@ begin
   update public.v2_event_registrations
   set status=p_status,responded_at=now(),companion_name=case when p_status='no' then null else companion_name end,race_days=case when p_status='no' then '{}'::text[] else race_days end
   where event_id=v_event_id and athlete_id=p_athlete_id returning id into v_registration_id;
-  return jsonb_build_object('ok',true,'registration_id',v_registration_id,'status',p_status);
+  return jsonb_build_object('ok',true,'status',p_status);
 end;
 $$;
 revoke all on function public.v2_set_registration_status(text,uuid,text) from public;

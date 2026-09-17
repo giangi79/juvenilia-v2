@@ -369,7 +369,7 @@ function refreshSelectAllRegistrationState(){
 function renderRegistrations(){
   $('registrationsBody').replaceChildren();if($('registrationsSort'))$('registrationsSort').value=registrationsSort;
   sortedRegistrations().forEach(r=>{
-    const tr=document.createElement('tr');
+    const tr=document.createElement('tr');tr.dataset.registrationId=String(r.id);tr.dataset.athleteId=String(r.athlete_id);
     const checkTd=document.createElement('td'),cb=document.createElement('input');cb.type='checkbox';cb.className='registration-select';cb.checked=selectedRegistrationIds.has(r.id);
     cb.onchange=()=>{if(cb.checked)selectedRegistrationIds.add(r.id);else selectedRegistrationIds.delete(r.id);refreshSelectAllRegistrationState()};checkTd.append(cb);tr.append(checkTd);
     [r.athlete?.full_name||'',r.category_override||r.athlete?.category||'',r.status,r.companion_name||'',r.is_locked?'Sì':'No'].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});

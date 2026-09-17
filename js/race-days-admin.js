@@ -19,7 +19,7 @@ function renderTable(){
   if(!days.length){document.querySelector('.race-days-head')?.remove();document.querySelectorAll('.race-days-cell').forEach(x=>x.remove());return}
   const table=$('registrationsBody')?.closest('table');if(!table)return;
   let th=table.querySelector('.race-days-head');if(!th){th=document.createElement('th');th.className='race-days-head';th.textContent='Giorni';table.querySelector('thead tr')?.children[2]?.insertAdjacentElement('afterend',th)}
-  [...($('registrationsBody')?.rows||[])].forEach(tr=>{tr.querySelector('.race-days-cell')?.remove();const name=tr.children[1]?.textContent?.trim();const r=regs.find(x=>x.athlete?.full_name===name);const td=document.createElement('td');td.className='race-days-cell';td.dataset.label='Giorni';td.append(badges(r?.race_days||[]));tr.children[2]?.insertAdjacentElement('afterend',td)});
+  [...($('registrationsBody')?.rows||[])].forEach(tr=>{tr.querySelector('.race-days-cell')?.remove();const r=regs.find(x=>String(x.id)===tr.dataset.registrationId);const td=document.createElement('td');td.className='race-days-cell';td.dataset.label='Giorni';td.append(badges(r?.race_days||[]));tr.children[2]?.insertAdjacentElement('afterend',td)});
 }
 async function load(force=false){
   ensureUI();const id=$('eventSelect')?.value;if(!id)return;if(loading)return;if(!force&&id===loadedEventId){renderTable();return}

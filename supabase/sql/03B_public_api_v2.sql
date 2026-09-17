@@ -185,7 +185,6 @@ begin
   select jsonb_build_object(
     'event',
     jsonb_build_object(
-      'id', v_event.id,
       'slug', v_event.slug,
       'title', v_event.title,
       'description', v_event.description,
@@ -208,7 +207,6 @@ begin
       (
         select jsonb_agg(
           jsonb_build_object(
-            'id', t.id,
             'label', t.label,
             'deadline', t.deadline,
             'categories', to_jsonb(t.categories)
@@ -226,14 +224,11 @@ begin
       (
         select jsonb_agg(
           jsonb_build_object(
-            'registration_id', r.id,
             'athlete_id', a.id,
             'full_name', a.full_name,
             'category', coalesce(r.category_override, a.category),
             'gender', a.gender,
-            'birth_date', a.birth_date,
             'status', r.status,
-            'companion_name', r.companion_name,
             'race_day', r.race_day,
             'effective_deadline',
               public.v2_effective_registration_deadline(
@@ -323,7 +318,6 @@ begin
 
   return jsonb_build_object(
     'ok', true,
-    'registration_id', v_registration_id,
     'status', p_status
   );
 end;
@@ -395,11 +389,7 @@ begin
     and athlete_id = p_athlete_id
   returning id into v_registration_id;
 
-  return jsonb_build_object(
-    'ok', true,
-    'registration_id', v_registration_id,
-    'companion_name', v_clean_name
-  );
+  return jsonb_build_object('ok', true);
 end;
 $$;
 
