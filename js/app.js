@@ -3,60 +3,19 @@ import { toast, formatDate } from './ui.js';
 
 let payload=null;
 let countdownInterval=null;
-function readPublicRoute(){
-  const params=new URLSearchParams(location.search);
-  return {
-    slug:params.get('gara')||params.get('event')||null,
-    direct:params.get('diretta')==='1'||params.get('direct')==='1'
-  };
-}
-let publicRoute=readPublicRoute();
-let selectedSlug=publicRoute.slug;
-let directEventMode=publicRoute.direct;
-let registrationSort='name';
+function readPublicRoute(){const params=new URLSearchParams(location.search);return {slug:params.get('gara')||params.get('event')||null,direct:params.get('diretta')==='1'||params.get('direct')==='1'}}
+let publicRoute=readPublicRoute(),selectedSlug=publicRoute.slug,directEventMode=publicRoute.direct,registrationSort='name';
 const CATEGORY_ORDER=['GIOVANISSIMI','ESORDIENTI','R12','RAGAZZI','ALLIEVI','JUNIOR','SENIOR'];
 const categoryOrderValue=cat=>{const i=CATEGORY_ORDER.indexOf(String(cat||'').toUpperCase());return i<0?999:i};
-function sanitizePublicHtml(html){
-  const tpl=document.createElement('template');tpl.innerHTML=String(html||'');
-  const allowed=new Set(['B','STRONG','I','EM','U','BR','P','DIV','UL','OL','LI','A','SPAN']);
-  const walk=node=>{
-    [...node.childNodes].forEach(child=>{
-      if(child.nodeType===Node.ELEMENT_NODE){
-        if(!allowed.has(child.tagName)){child.replaceWith(...child.childNodes);return}
-        [...child.attributes].forEach(attr=>{
-          const n=attr.name.toLowerCase();
-          if(n==='href'&&child.tagName==='A'){
-            try{const u=new URL(attr.value,location.href);if(!['http:','https:','mailto:'].includes(u.protocol))child.removeAttribute(attr.name)}
-            catch{child.removeAttribute(attr.name)}
-          }else if(n==='style'){
-            const keep=[];
-            attr.value.split(';').forEach(part=>{const [prop,val]=part.split(':').map(x=>x?.trim());if(['color','background-color'].includes((prop||'').toLowerCase())&&/^#[0-9a-f]{3,8}$/i.test(val||''))keep.push(`${prop}:${val}`)});
-            if(keep.length)child.setAttribute('style',keep.join(';'));else child.removeAttribute('style');
-          }else if(!(child.tagName==='A'&&['href','target','rel'].includes(n)))child.removeAttribute(attr.name);
-        });
-        if(child.tagName==='A'){child.setAttribute('target','_blank');child.setAttribute('rel','noopener noreferrer')}
-        walk(child);
-      }else if(child.nodeType!==Node.TEXT_NODE)child.remove();
-    });
-  };
-  walk(tpl.content);return tpl.innerHTML;
-}
-
-async function init(){initVisualControls();if(selectedSlug){await loadEvent(selectedSlug)}else{await loadEvents()}}
+function sanitizePublicHtml(html){const tpl=document.createElement('template');tpl.innerHTML=String(html||'');const allowed=new Set(['B','STRONG','I','EM','U','BR','P','DIV','UL','OL','LI','A','SPAN']);const walk=node=>{[...node.childNodes].forEach(child=>{if(child.nodeType===Node.ELEMENT_NODE){if(!allowed.has(child.tagName)){child.replaceWith(...child.childNodes);return}[...child.attributes].forEach(attr=>{const n=attr.name.toLowerCase();if(n==='href'&&child.tagName==='A'){try{const u=new URL(attr.value,location.href);if(!['http:','https:','mailto:'].includes(u.protocol))child.removeAttribute(attr.name)}catch{child.removeAttribute(attr.name)}}else if(n==='style'){const keep=[];attr.value.split(';').forEach(part=>{const [prop,val]=part.split(':').map(x=>x?.trim());if(['color','background-color'].includes((prop||'').toLowerCase())&&/^#[0-9a-f]{3,8}$/i.test(val||''))keep.push(`${prop}:${val}`)});if(keep.length)child.setAttribute('style',keep.join(';'));else child.removeAttribute('style')}else if(!(child.tagName==='A'&&['href','target','rel'].includes(n)))child.removeAttribute(attr.name)});if(child.tagName==='A'){child.setAttribute('target','_blank');child.setAttribute('rel','noopener noreferrer')}walk(child)}else if(child.nodeType!==Node.TEXT_NODE)child.remove()})};walk(tpl.content);return tpl.innerHTML}
+function goTop(){window.scrollTo({top:0,left:0,behavior:'auto'});document.documentElement.scrollTop=0;document.body.scrollTop=0}
+async function init(){initVisualControls();if(selectedSlug){await loadEvent(selectedSlug);goTop()}else{await loadEvents();goTop()}}
 async function loadEvents(){const {data,error}=await db.rpc('v2_list_public_events');if(error){showFatal(error.message);return}renderEventList(data||[])}
-function renderEventList(events){const list=document.getElementById('eventsList');list.replaceChildren();document.getElementById('eventView').classList.add('hidden');list.classList.remove('hidden');document.getElementById('eventTitle').textContent='Gare Juvenilia';document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';document.getElementById('backEventsBtn')?.remove();stopHeroCountdown();events.forEach(e=>{const card=document.createElement('article');card.className='event-card card';const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';const meta=document.createElement('div');meta.className='event-meta';meta.textContent=e.registration_deadline?`Scadenza iscrizioni: ${formatDate(e.registration_deadline)}`:'';const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);card.append(h,meta,b);list.append(card)})}
-function openEvent(slug){selectedSlug=slug;directEventMode=false;history.pushState({},'',`?gara=${encodeURIComponent(slug)}`);loadEvent(slug)}
+function renderEventList(events){const list=document.getElementById('eventsList');list.replaceChildren();document.getElementById('eventView').classList.add('hidden');list.classList.remove('hidden');document.getElementById('eventTitle').textContent='Gare Juvenilia';document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';stopHeroCountdown();events.forEach(e=>{const card=document.createElement('article');card.className='event-card card';const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';const meta=document.createElement('div');meta.className='event-meta';meta.textContent=e.registration_deadline?`Scadenza iscrizioni: ${formatDate(e.registration_deadline)}`:'';const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);card.append(h,meta,b);list.append(card)});goTop()}
+function openEvent(slug){selectedSlug=slug;directEventMode=false;history.pushState({},'',`?gara=${encodeURIComponent(slug)}`);goTop();loadEvent(slug).then(goTop)}
 async function loadEvent(slug){const {data,error}=await db.rpc('v2_get_public_event',{p_slug:slug});if(error){showFatal(error.message);return}payload=data;if(!payload){showFatal('Gara non trovata.');return}renderEvent(payload)}
-function renderEvent(data){
-  const e=data.event||data,cfg=data.config||{},regs=data.registrations||[];
-  document.getElementById('eventsList').classList.add('hidden');
-  const view=document.getElementById('eventView');view.classList.remove('hidden');
-  if(directEventMode){document.getElementById('backEventsBtn')?.remove()}else{
-    let back=document.getElementById('backEventsBtn');
-    if(!back){back=document.createElement('button');back.id='backEventsBtn';back.className='back-events';back.type='button';back.textContent='← Tutte le gare';back.onclick=()=>{history.pushState({},'',location.pathname);selectedSlug=null;directEventMode=false;payload=null;loadEvents()};view.prepend(back)}
-  }
-  document.getElementById('eventTitle').textContent=e.title||e.name||'Gara';document.getElementById('eventDescription').textContent=e.description||'';startHeroCountdown(e.registration_deadline);renderQuickMeta(e,cfg);renderProgress(regs);renderInfo(cfg);renderRaceDays(e,cfg);renderCategoryDeadlines(e,cfg);renderDocuments(cfg);renderFilters(regs);renderStats(regs);renderRegistrations(regs,cfg);renderConfirmed(regs,cfg);renderPayment(null)
-}
+function ensureBackButton(){let back=document.getElementById('backEventsBtn');if(!back){back=document.createElement('button');back.id='backEventsBtn';back.className='back-events';back.type='button';back.innerHTML='<i class="fas fa-arrow-left" aria-hidden="true"></i> Tutte le gare';back.onclick=()=>{history.pushState({},'',location.pathname);selectedSlug=null;directEventMode=false;payload=null;loadEvents().then?.(goTop);goTop()}}return back}
+function renderEvent(data){const e=data.event||data,cfg=data.config||{},regs=data.registrations||[];document.getElementById('eventsList').classList.add('hidden');const view=document.getElementById('eventView');view.classList.remove('hidden');const back=ensureBackButton();if(!back.isConnected)view.prepend(back);back.classList.toggle('hidden',directEventMode);document.getElementById('eventTitle').textContent=e.title||e.name||'Gara';document.getElementById('eventDescription').textContent=e.description||'';startHeroCountdown(e.registration_deadline);renderQuickMeta(e,cfg);renderProgress(regs);renderInfo(cfg);renderRaceDays(e,cfg);renderCategoryDeadlines(e,cfg);renderDocuments(cfg);renderFilters(regs);renderStats(regs);renderRegistrations(regs,cfg);renderConfirmed(regs,cfg);renderPayment(null)}
 function renderQuickMeta(e,cfg){const box=document.getElementById('eventQuickMeta');box.replaceChildren();const entries=[];if(e.registration_deadline)entries.push(['fa-clock','Scadenza',formatDate(e.registration_deadline)]);const active=e.is_published!==false&&!e.is_archived;entries.push(['fa-circle-check','Stato',active?'Aperta':'Chiusa']);entries.forEach(([icon,label,value])=>{const d=document.createElement('div');d.className='quick-meta-chip';d.innerHTML=`<i class="fas ${icon}"></i><span><small>${label}</small><strong>${value}</strong></span>`;box.append(d)})}
 function renderProgress(regs){const box=document.getElementById('eventProgress');if(!box)return;const yes=regs.filter(r=>r.status==='yes').length,no=regs.filter(r=>r.status==='no').length,total=regs.length,done=yes+no,pct=total?Math.round(done/total*100):0;box.innerHTML=`<div class="progress-copy"><span>Risposte ricevute</span><strong>${done}/${total}</strong></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>`}
 function renderInfo(cfg){const box=document.getElementById('infoBox');box.replaceChildren();const html=cfg.info_html||cfg.info_text||'';if(cfg.show_info_box===false||!html){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Informazioni';const d=document.createElement('div');d.innerHTML=sanitizePublicHtml(html);box.append(h,d)}
@@ -78,7 +37,7 @@ function renderDocs(cfg){const docs=[cfg.document_1,cfg.document_2].filter(Boole
 document.getElementById('search').addEventListener('input',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));document.getElementById('categoryFilter').addEventListener('change',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));
 function setRegistrationSort(mode){registrationSort=mode==='category'?'category':'name';const nameBtn=document.getElementById('sortByName'),catBtn=document.getElementById('sortByCategory'),active=registrationSort==='name'?nameBtn:catBtn;[nameBtn,catBtn].forEach(btn=>{if(!btn)return;const isActive=btn===active;btn.classList.toggle('active',isActive);btn.setAttribute('aria-pressed',String(isActive))});const nameIcon=nameBtn?.querySelector('.sort-indicator'),catIcon=catBtn?.querySelector('.sort-indicator');if(nameIcon)nameIcon.className=`fas ${registrationSort==='name'?'fa-arrow-down-a-z':'fa-sort'} sort-indicator`;if(catIcon)catIcon.className=`fas ${registrationSort==='category'?'fa-arrow-down-short-wide':'fa-sort'} sort-indicator`;if(payload)renderRegistrations(payload.registrations||[],payload.config||{})}
 document.getElementById('sortByName')?.addEventListener('click',()=>setRegistrationSort('name'));document.getElementById('sortByCategory')?.addEventListener('click',()=>setRegistrationSort('category'));
-window.addEventListener('popstate',()=>{publicRoute=readPublicRoute();selectedSlug=publicRoute.slug;directEventMode=publicRoute.direct;selectedSlug?loadEvent(selectedSlug):loadEvents()});
+window.addEventListener('popstate',()=>{publicRoute=readPublicRoute();selectedSlug=publicRoute.slug;directEventMode=publicRoute.direct;(selectedSlug?loadEvent(selectedSlug):loadEvents()).then(goTop)});
 window.addEventListener('juvenilia:registration-updated',()=>{if(selectedSlug)loadEvent(selectedSlug)});
 function categoryClass(category){const c=(category||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();if(c.includes('senior'))return 'cat-senior';if(c.includes('junior'))return 'cat-junior';if(c.includes('alliev'))return 'cat-allievi';if(c.includes('ragazzi 12')||c.includes('r12'))return 'cat-r12';if(c.includes('ragazz'))return 'cat-ragazzi';if(c.includes('esord'))return 'cat-esordienti';if(c.includes('giovan'))return 'cat-giovanissimi';return 'cat-default'}
 function startHeroCountdown(deadline){stopHeroCountdown();const box=document.getElementById('heroCountdown');if(!box)return;if(!deadline){box.classList.add('hidden');return}const update=()=>{const diff=new Date(deadline).getTime()-Date.now();box.replaceChildren();const icon=document.createElement('i');icon.className='fas fa-stopwatch';const copy=document.createElement('div');const label=document.createElement('span');label.className='countdown-label';label.textContent=diff>0?'TEMPO ALLA SCADENZA':'ISCRIZIONI CHIUSE';const value=document.createElement('strong');if(diff<=0){value.textContent='SCADUTO';box.classList.add('countdown-expired')}else{box.classList.remove('countdown-expired');const total=Math.floor(diff/1000),days=Math.floor(total/86400),hours=Math.floor((total%86400)/3600),mins=Math.floor((total%3600)/60),secs=total%60;value.textContent=`${days}g ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`}copy.append(label,value);box.append(icon,copy);box.classList.remove('hidden')};update();countdownInterval=setInterval(update,1000)}
