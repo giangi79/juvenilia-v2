@@ -50,6 +50,7 @@ athlete_rows as (
     a.id as athlete_id,
     a.full_name,
     a.category,
+    a.gender,
     count(r.id)::integer as total_count,
     count(*) filter (where r.status='yes')::integer as yes_count,
     count(*) filter (where r.status='no')::integer as no_count,
@@ -57,7 +58,7 @@ athlete_rows as (
   from public.v2_event_registrations r
   join eligible_events e on e.id=r.event_id
   join public.v2_athletes a on a.id=r.athlete_id
-  group by a.id,a.full_name,a.category
+  group by a.id,a.full_name,a.category,a.gender
 ),
 category_rows as (
   select
@@ -114,6 +115,7 @@ select jsonb_build_object(
   'athletes',coalesce((select jsonb_agg(jsonb_build_object(
     'full_name',ar.full_name,
     'category',ar.category,
+    'gender',ar.gender,
     'total_count',ar.total_count,
     'yes_count',ar.yes_count,
     'no_count',ar.no_count,
