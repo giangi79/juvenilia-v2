@@ -46,6 +46,7 @@ event_categories as (
 ),
 athlete_rows as (
   select
+    a.id as athlete_id,
     a.full_name,
     a.category,
     count(r.id)::integer as total_count,
@@ -103,14 +104,22 @@ select jsonb_build_object(
     ) order by ec.category) from event_categories ec where ec.event_id=er.id),'[]'::jsonb)
   ) order by er.is_archived asc,er.created_at desc) from event_rows er),'[]'::jsonb),
   'athletes',coalesce((select jsonb_agg(jsonb_build_object(
-    'full_name',full_name,
-    'category',category,
-    'total_count',total_count,
-    'yes_count',yes_count,
-    'no_count',no_count,
-    'pending_count',pending_count,
-    'participation_rate',case when total_count>0 then round(yes_count*100.0/total_count,1) else 0 end
-  ) order by yes_count desc,full_name) from athlete_rows),'[]'::jsonb),
+    'full_name',ar.full_name,
+    'category',ar.category,
+    'total_count',ar.total_count,
+    'yes_count',ar.yes_count,
+    'no_count',ar.no_count,
+    'pending_count',ar.pending_count,
+    'participation_rate',case when ar.total_count>0 then round(ar.yes_count*100.0/ar.total_count,1) else 0 end,
+    'attended_events',coalesce((select jsonb_agg(jsonb_build_object(
+      'title',er.title,
+      'event_days',er.event_days,
+      'is_archived',er.is_archived
+    ) order by er.created_at desc)
+    from public.v2_event_registrations r2
+    join event_rows er on er.id=r2.event_id
+    where r2.athlete_id=ar.athlete_id and r2.status='yes'),'[]'::jsonb)
+  ) order by ar.yes_count desc,ar.full_name) from athlete_rows ar),'[]'::jsonb),
   'categories',coalesce((select jsonb_agg(jsonb_build_object(
     'category',category,
     'total_count',total_count,
