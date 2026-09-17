@@ -1,3 +1,5 @@
+@import url('./celebration-racing.css?v=1');
+
 /* Evidenzia i giorni scelti nel riepilogo pubblico */
 #confirmed .weekday-summary{
   display:inline-flex!important;
