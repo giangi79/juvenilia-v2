@@ -42,84 +42,22 @@ function sanitizePublicHtml(html){
   walk(tpl.content);return tpl.innerHTML;
 }
 
-
-async function init(){
-  initVisualControls();
-  if(selectedSlug){
-    await loadEvent(selectedSlug);
-  }else{
-    await loadEvents();
-  }
-}
-
-async function loadEvents(){
-  const {data,error}=await db.rpc('v2_list_public_events');
-  if(error){showFatal(error.message);return}
-  renderEventList(data||[]);
-}
-
-function renderEventList(events){
-  const list=document.getElementById('eventsList');
-  list.replaceChildren();
-  document.getElementById('eventView').classList.add('hidden');
-  list.classList.remove('hidden');
-  document.getElementById('eventTitle').textContent='Gare Juvenilia';
-  document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';
-  stopHeroCountdown();
-  events.forEach(e=>{
-    const card=document.createElement('article');card.className='event-card card';
-    const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';
-    const meta=document.createElement('div');meta.className='event-meta';meta.textContent=e.registration_deadline?`Scadenza iscrizioni: ${formatDate(e.registration_deadline)}`:'';
-    const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);
-    card.append(h,meta,b);list.append(card);
-  });
-}
-
-function openEvent(slug){
-  selectedSlug=slug;
-  directEventMode=false;
-  history.pushState({},'',`?gara=${encodeURIComponent(slug)}`);
-  loadEvent(slug);
-}
-
-async function loadEvent(slug){
-  const {data,error}=await db.rpc('v2_get_public_event',{p_slug:slug});
-  if(error){showFatal(error.message);return}
-  payload=data;
-  if(!payload){showFatal('Gara non trovata.');return}
-  renderEvent(payload);
-}
-
+async function init(){initVisualControls();if(selectedSlug){await loadEvent(selectedSlug)}else{await loadEvents()}}
+async function loadEvents(){const {data,error}=await db.rpc('v2_list_public_events');if(error){showFatal(error.message);return}renderEventList(data||[])}
+function renderEventList(events){const list=document.getElementById('eventsList');list.replaceChildren();document.getElementById('eventView').classList.add('hidden');list.classList.remove('hidden');document.getElementById('eventTitle').textContent='Gare Juvenilia';document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';document.getElementById('backEventsBtn')?.remove();stopHeroCountdown();events.forEach(e=>{const card=document.createElement('article');card.className='event-card card';const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';const meta=document.createElement('div');meta.className='event-meta';meta.textContent=e.registration_deadline?`Scadenza iscrizioni: ${formatDate(e.registration_deadline)}`:'';const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);card.append(h,meta,b);list.append(card)})}
+function openEvent(slug){selectedSlug=slug;directEventMode=false;history.pushState({},'',`?gara=${encodeURIComponent(slug)}`);loadEvent(slug)}
+async function loadEvent(slug){const {data,error}=await db.rpc('v2_get_public_event',{p_slug:slug});if(error){showFatal(error.message);return}payload=data;if(!payload){showFatal('Gara non trovata.');return}renderEvent(payload)}
 function renderEvent(data){
-  const e=data.event||data;
-  const cfg=data.config||{};
-  const regs=data.registrations||[];
+  const e=data.event||data,cfg=data.config||{},regs=data.registrations||[];
   document.getElementById('eventsList').classList.add('hidden');
-  document.getElementById('eventView').classList.remove('hidden');
-  document.getElementById('eventTitle').textContent=e.title||e.name||'Gara';
-  document.getElementById('eventDescription').textContent=e.description||'';
-  startHeroCountdown(e.registration_deadline);
-  renderQuickMeta(e,cfg);
-  renderProgress(regs);
-  renderInfo(cfg);
-  renderRaceDays(e,cfg);
-  renderCategoryDeadlines(e,cfg);
-  renderDocuments(cfg);
-  renderFilters(regs);
-  renderStats(regs);
-  renderRegistrations(regs,cfg);
-  renderConfirmed(regs,cfg);
-  renderPayment(null);
+  const view=document.getElementById('eventView');view.classList.remove('hidden');
+  if(directEventMode){document.getElementById('backEventsBtn')?.remove()}else{
+    let back=document.getElementById('backEventsBtn');
+    if(!back){back=document.createElement('button');back.id='backEventsBtn';back.className='back-events';back.type='button';back.textContent='← Tutte le gare';back.onclick=()=>{history.pushState({},'',location.pathname);selectedSlug=null;directEventMode=false;payload=null;loadEvents()};view.prepend(back)}
+  }
+  document.getElementById('eventTitle').textContent=e.title||e.name||'Gara';document.getElementById('eventDescription').textContent=e.description||'';startHeroCountdown(e.registration_deadline);renderQuickMeta(e,cfg);renderProgress(regs);renderInfo(cfg);renderRaceDays(e,cfg);renderCategoryDeadlines(e,cfg);renderDocuments(cfg);renderFilters(regs);renderStats(regs);renderRegistrations(regs,cfg);renderConfirmed(regs,cfg);renderPayment(null)
 }
-
-function renderQuickMeta(e,cfg){
-  const box=document.getElementById('eventQuickMeta');box.replaceChildren();
-  const entries=[];
-  if(e.registration_deadline)entries.push(['fa-clock','Scadenza',formatDate(e.registration_deadline)]);
-  const active=e.is_published!==false&&!e.is_archived;
-  entries.push(['fa-circle-check','Stato',active?'Aperta':'Chiusa']);
-  entries.forEach(([icon,label,value])=>{const d=document.createElement('div');d.className='quick-meta-chip';d.innerHTML=`<i class="fas ${icon}"></i><span><small>${label}</small><strong>${value}</strong></span>`;box.append(d)});
-}
+function renderQuickMeta(e,cfg){const box=document.getElementById('eventQuickMeta');box.replaceChildren();const entries=[];if(e.registration_deadline)entries.push(['fa-clock','Scadenza',formatDate(e.registration_deadline)]);const active=e.is_published!==false&&!e.is_archived;entries.push(['fa-circle-check','Stato',active?'Aperta':'Chiusa']);entries.forEach(([icon,label,value])=>{const d=document.createElement('div');d.className='quick-meta-chip';d.innerHTML=`<i class="fas ${icon}"></i><span><small>${label}</small><strong>${value}</strong></span>`;box.append(d)})}
 function renderProgress(regs){const box=document.getElementById('eventProgress');if(!box)return;const yes=regs.filter(r=>r.status==='yes').length,no=regs.filter(r=>r.status==='no').length,total=regs.length,done=yes+no,pct=total?Math.round(done/total*100):0;box.innerHTML=`<div class="progress-copy"><span>Risposte ricevute</span><strong>${done}/${total}</strong></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>`}
 function renderInfo(cfg){const box=document.getElementById('infoBox');box.replaceChildren();const html=cfg.info_html||cfg.info_text||'';if(cfg.show_info_box===false||!html){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Informazioni';const d=document.createElement('div');d.innerHTML=sanitizePublicHtml(html);box.append(h,d)}
 function renderRaceDays(e,cfg){const box=document.getElementById('raceDaysBox');box.replaceChildren();const days=Array.isArray(cfg.race_days)?cfg.race_days:[];if(!days.length){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Giornate gara';const d=document.createElement('div');d.className='race-days';days.forEach(x=>{const s=document.createElement('span');s.className='pill';s.textContent=x;d.append(s)});box.append(h,d)}
@@ -127,56 +65,9 @@ function renderCategoryDeadlines(e,cfg){const box=document.getElementById('categ
 function renderDocuments(cfg){renderDocs(cfg)}
 function renderFilters(regs){const sel=document.getElementById('categoryFilter'),old=sel.value;sel.innerHTML='<option value="">Tutte le categorie</option>';[...new Set(regs.map(r=>r.category).filter(Boolean))].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.append(o)});sel.value=old}
 function renderStats(regs){const box=document.getElementById('stats');box.replaceChildren();[['yes','✓','Confermati'],['no','×','Non partecipano'],['pending','?','Da definire']].forEach(([status,icon,label])=>{const n=regs.filter(r=>r.status===status).length,d=document.createElement('div');d.className=`stat stat-${status}`;d.innerHTML=`<span class="stat-icon">${icon}</span><div><strong>${n}</strong><span>${label}</span></div>`;box.append(d)})}
-
-function visible(r){
-  const q=document.getElementById('search').value.trim().toLowerCase(),c=document.getElementById('categoryFilter').value;
-  return (!q||`${r.full_name} ${r.category}`.toLowerCase().includes(q))&&(!c||r.category===c);
-}
-
-function quotaFor(r,cfg){
-  const costs=cfg.category_costs||{};
-  const n=Number(costs[r.category]??0);
-  return Number.isFinite(n)?n:0;
-}
-
-function renderRegistrations(regs,cfg){
-  const box=document.getElementById('registrations');
-  box.replaceChildren();
-
-  const ordered=regs.filter(visible).slice().sort((a,b)=>{
-    const nameCmp=String(a.full_name||'').localeCompare(String(b.full_name||''),'it',{sensitivity:'base'});
-    if(registrationSort==='category'){
-      const catCmp=categoryOrderValue(a.category)-categoryOrderValue(b.category);
-      if(catCmp!==0)return catCmp;
-      const catTextCmp=String(a.category||'').localeCompare(String(b.category||''),'it',{sensitivity:'base'});
-      return catTextCmp||nameCmp;
-    }
-    return nameCmp;
-  });
-
-  ordered.forEach(r=>{
-    const row=document.createElement('article');
-    row.className=`athlete athlete-${r.status} ${categoryClass(r.category)}`;
-    const expired=r.effective_deadline && new Date(r.effective_deadline)<new Date();
-    const athleteCell=document.createElement('div');athleteCell.className='athlete-cell athlete-name-cell';
-    const nameLine=document.createElement('div');nameLine.className='athlete-name-line';
-    const name=document.createElement('h3');name.textContent=r.full_name;
-    const gender=document.createElement('span');gender.className=`gender-badge gender-${String(r.gender||'').toLowerCase()}`;gender.textContent=r.gender||'–';gender.title=r.gender==='F'?'Femminile':r.gender==='M'?'Maschile':'Sesso non indicato';
-    nameLine.append(name,gender);athleteCell.append(nameLine);
-    const sub=document.createElement('div');sub.className='athlete-subline';
-    const state=document.createElement('span');state.className=`athlete-state state-${r.status}`;state.textContent=r.status==='yes'?'CONFERMATO':r.status==='no'?'NON PARTECIPA':'DA DEFINIRE';sub.append(state);
-    if(r.race_day){const day=document.createElement('span');day.className='race-day-mini';day.textContent=r.race_day;sub.append(day)}athleteCell.append(sub);
-    const categoryCell=document.createElement('div');categoryCell.className='athlete-cell athlete-category-cell-public';const catBadge=document.createElement('span');catBadge.className=`category-badge ${categoryClass(r.category)}`;catBadge.textContent=r.category||'Categoria';categoryCell.append(catBadge);
-    const q=quotaFor(r,cfg);if(cfg.show_category_costs!==false&&q>0){const qb=document.createElement('span');qb.className='quote-badge';qb.textContent=`${q.toFixed(2)} €`;categoryCell.append(qb)}
-    const yesCell=document.createElement('div');yesCell.className='athlete-cell choice-cell';const yes=document.createElement('button');yes.className=`registration-choice yes${r.status==='yes'?' active':''}`;{const i=document.createElement('i');i.className='fas fa-check';const sp=document.createElement('span');sp.textContent='PARTECIPA';yes.append(i,sp)}yes.disabled=expired;yes.onclick=()=>setStatus(r,'yes');yesCell.append(yes);
-    const noCell=document.createElement('div');noCell.className='athlete-cell choice-cell';const no=document.createElement('button');no.className=`registration-choice no${r.status==='no'?' active':''}`;{const i=document.createElement('i');i.className='fas fa-xmark';const sp=document.createElement('span');sp.textContent='NON PARTECIPA';no.append(i,sp)}no.disabled=expired;no.onclick=()=>setStatus(r,'no');noCell.append(no);
-    row.append(athleteCell,categoryCell,yesCell,noCell);
-    const detail=document.createElement('div');detail.className='athlete-row-detail';
-    if(cfg.show_companion!==false&&r.status==='yes'){const companion=document.createElement('div');companion.className='companion';const input=document.createElement('input');input.placeholder='Nome accompagnatore';input.value=r.companion_name||'';input.disabled=expired;const save=document.createElement('button');save.textContent='Salva accompagnatore';save.disabled=expired;save.onclick=()=>setCompanion(r,input.value);companion.append(input,save);detail.append(companion)}
-    const deadline=document.createElement('div');deadline.className='deadline'+(expired?' expired':'');deadline.textContent=expired?'Scadenza terminata':`Modificabile fino al ${formatDate(r.effective_deadline)}`;detail.append(deadline);row.append(detail);box.append(row);
-  });
-}
-
+function visible(r){const q=document.getElementById('search').value.trim().toLowerCase(),c=document.getElementById('categoryFilter').value;return (!q||`${r.full_name} ${r.category}`.toLowerCase().includes(q))&&(!c||r.category===c)}
+function quotaFor(r,cfg){const costs=cfg.category_costs||{};const n=Number(costs[r.category]??0);return Number.isFinite(n)?n:0}
+function renderRegistrations(regs,cfg){const box=document.getElementById('registrations');box.replaceChildren();const ordered=regs.filter(visible).slice().sort((a,b)=>{const nameCmp=String(a.full_name||'').localeCompare(String(b.full_name||''),'it',{sensitivity:'base'});if(registrationSort==='category'){const catCmp=categoryOrderValue(a.category)-categoryOrderValue(b.category);if(catCmp!==0)return catCmp;const catTextCmp=String(a.category||'').localeCompare(String(b.category||''),'it',{sensitivity:'base'});return catTextCmp||nameCmp}return nameCmp});ordered.forEach(r=>{const row=document.createElement('article');row.className=`athlete athlete-${r.status} ${categoryClass(r.category)}`;const expired=r.effective_deadline&&new Date(r.effective_deadline)<new Date();const athleteCell=document.createElement('div');athleteCell.className='athlete-cell athlete-name-cell';const nameLine=document.createElement('div');nameLine.className='athlete-name-line';const name=document.createElement('h3');name.textContent=r.full_name;const gender=document.createElement('span');gender.className=`gender-badge gender-${String(r.gender||'').toLowerCase()}`;gender.textContent=r.gender||'–';gender.title=r.gender==='F'?'Femminile':r.gender==='M'?'Maschile':'Sesso non indicato';nameLine.append(name,gender);athleteCell.append(nameLine);const sub=document.createElement('div');sub.className='athlete-subline';const state=document.createElement('span');state.className=`athlete-state state-${r.status}`;state.textContent=r.status==='yes'?'CONFERMATO':r.status==='no'?'NON PARTECIPA':'DA DEFINIRE';sub.append(state);if(r.race_day){const day=document.createElement('span');day.className='race-day-mini';day.textContent=r.race_day;sub.append(day)}athleteCell.append(sub);const categoryCell=document.createElement('div');categoryCell.className='athlete-cell athlete-category-cell-public';const catBadge=document.createElement('span');catBadge.className=`category-badge ${categoryClass(r.category)}`;catBadge.textContent=r.category||'Categoria';categoryCell.append(catBadge);const q=quotaFor(r,cfg);if(cfg.show_category_costs!==false&&q>0){const qb=document.createElement('span');qb.className='quote-badge';qb.textContent=`${q.toFixed(2)} €`;categoryCell.append(qb)}const yesCell=document.createElement('div');yesCell.className='athlete-cell choice-cell';const yes=document.createElement('button');yes.className=`registration-choice yes${r.status==='yes'?' active':''}`;{const i=document.createElement('i');i.className='fas fa-check';const sp=document.createElement('span');sp.textContent='PARTECIPA';yes.append(i,sp)}yes.disabled=expired;yes.onclick=()=>setStatus(r,'yes');yesCell.append(yes);const noCell=document.createElement('div');noCell.className='athlete-cell choice-cell';const no=document.createElement('button');no.className=`registration-choice no${r.status==='no'?' active':''}`;{const i=document.createElement('i');i.className='fas fa-xmark';const sp=document.createElement('span');sp.textContent='NON PARTECIPA';no.append(i,sp)}no.disabled=expired;no.onclick=()=>setStatus(r,'no');noCell.append(no);row.append(athleteCell,categoryCell,yesCell,noCell);const detail=document.createElement('div');detail.className='athlete-row-detail';if(cfg.show_companion!==false&&r.status==='yes'){const companion=document.createElement('div');companion.className='companion';const input=document.createElement('input');input.placeholder='Nome accompagnatore';input.value=r.companion_name||'';input.disabled=expired;const save=document.createElement('button');save.textContent='Salva accompagnatore';save.disabled=expired;save.onclick=()=>setCompanion(r,input.value);companion.append(input,save);detail.append(companion)}const deadline=document.createElement('div');deadline.className='deadline'+(expired?' expired':'');deadline.textContent=expired?'Scadenza terminata':`Modificabile fino al ${formatDate(r.effective_deadline)}`;detail.append(deadline);row.append(detail);box.append(row)})}
 async function notifyTelegramStatusNow(r,status){try{const {error}=await db.functions.invoke('telegram-dispatch',{body:{action:'status_now',event_slug:selectedSlug,athlete_id:r.athlete_id,status}});if(error)console.warn('Notifica Telegram immediata non inviata:',error.message||error)}catch(err){console.warn('Notifica Telegram immediata non inviata:',err)}}
 async function setStatus(r,status){if(!confirm(`Confermi la scelta per ${r.full_name}?`))return;const {error}=await db.rpc('v2_set_registration_status',{p_event_slug:selectedSlug,p_athlete_id:r.athlete_id,p_status:status});if(error){toast(friendlyError(error.message));return}toast('Scelta salvata');void notifyTelegramStatusNow(r,status);if(status==='yes')showCelebration();await loadEvent(selectedSlug)}
 async function setCompanion(r,name){const clean=name.trim().toUpperCase();const {error}=await db.rpc('v2_set_companion',{p_event_slug:selectedSlug,p_athlete_id:r.athlete_id,p_companion_name:clean});if(error){toast(friendlyError(error.message));return}toast('Accompagnatore salvato');await loadEvent(selectedSlug)}
@@ -185,7 +76,7 @@ function renderConfirmed(regs,cfg){const yes=regs.filter(r=>r.status==='yes'),se
 function renderPayment(pay){const box=document.getElementById('paymentBox');box.replaceChildren();if(!pay){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Dati pagamento';box.append(h);if(typeof pay==='string'){const p=document.createElement('p');p.textContent=pay;box.append(p);return}const entries=[['Intestatario',pay.holder],['IBAN',pay.iban],['Causale',pay.reason],['Email distinta',pay.email]].filter(([,v])=>v);const grid=document.createElement('div');grid.className='payment-grid';entries.forEach(([k,v])=>{const d=document.createElement('div');d.className='payment-item';const s=document.createElement('strong');s.textContent=k;const p=document.createElement('div');p.textContent=v;d.append(s,p);grid.append(d)});if(entries.length)box.append(grid);else box.classList.add('hidden')}
 function renderDocs(cfg){const docs=[cfg.document_1,cfg.document_2].filter(Boolean),box=document.getElementById('documentsBox');box.replaceChildren();if(!docs.some(d=>d?.url)){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Documenti';box.append(h);docs.forEach(d=>{if(d?.url){const a=document.createElement('a');a.href=d.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=d.text||'Apri documento';a.className='pill';box.append(a)}})}
 document.getElementById('search').addEventListener('input',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));document.getElementById('categoryFilter').addEventListener('change',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));
-function setRegistrationSort(mode){registrationSort=mode==='category'?'category':'name';const nameBtn=document.getElementById('sortByName'),catBtn=document.getElementById('sortByCategory'),active=registrationSort==='name'?nameBtn:catBtn,inactive=registrationSort==='name'?catBtn:nameBtn;[nameBtn,catBtn].forEach(btn=>{if(!btn)return;const isActive=btn===active;btn.classList.toggle('active',isActive);btn.setAttribute('aria-pressed',String(isActive))});const nameIcon=nameBtn?.querySelector('.sort-indicator'),catIcon=catBtn?.querySelector('.sort-indicator');if(nameIcon)nameIcon.className=`fas ${registrationSort==='name'?'fa-arrow-down-a-z':'fa-sort'} sort-indicator`;if(catIcon)catIcon.className=`fas ${registrationSort==='category'?'fa-arrow-down-short-wide':'fa-sort'} sort-indicator`;if(payload)renderRegistrations(payload.registrations||[],payload.config||{})}
+function setRegistrationSort(mode){registrationSort=mode==='category'?'category':'name';const nameBtn=document.getElementById('sortByName'),catBtn=document.getElementById('sortByCategory'),active=registrationSort==='name'?nameBtn:catBtn;[nameBtn,catBtn].forEach(btn=>{if(!btn)return;const isActive=btn===active;btn.classList.toggle('active',isActive);btn.setAttribute('aria-pressed',String(isActive))});const nameIcon=nameBtn?.querySelector('.sort-indicator'),catIcon=catBtn?.querySelector('.sort-indicator');if(nameIcon)nameIcon.className=`fas ${registrationSort==='name'?'fa-arrow-down-a-z':'fa-sort'} sort-indicator`;if(catIcon)catIcon.className=`fas ${registrationSort==='category'?'fa-arrow-down-short-wide':'fa-sort'} sort-indicator`;if(payload)renderRegistrations(payload.registrations||[],payload.config||{})}
 document.getElementById('sortByName')?.addEventListener('click',()=>setRegistrationSort('name'));document.getElementById('sortByCategory')?.addEventListener('click',()=>setRegistrationSort('category'));
 window.addEventListener('popstate',()=>{publicRoute=readPublicRoute();selectedSlug=publicRoute.slug;directEventMode=publicRoute.direct;selectedSlug?loadEvent(selectedSlug):loadEvents()});
 window.addEventListener('juvenilia:registration-updated',()=>{if(selectedSlug)loadEvent(selectedSlug)});
