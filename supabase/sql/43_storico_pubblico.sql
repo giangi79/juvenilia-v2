@@ -99,6 +99,13 @@ select jsonb_build_object(
     'no_count',er.no_count,
     'pending_count',er.pending_count,
     'participation_rate',case when er.total_count>0 then round(er.yes_count*100.0/er.total_count,1) else 0 end,
+    'confirmed_athletes',coalesce((select jsonb_agg(jsonb_build_object(
+      'full_name',a3.full_name,
+      'category',coalesce(r3.category_override,a3.category,'SENZA CATEGORIA')
+    ) order by coalesce(r3.category_override,a3.category,'SENZA CATEGORIA'),a3.full_name)
+    from public.v2_event_registrations r3
+    join public.v2_athletes a3 on a3.id=r3.athlete_id
+    where r3.event_id=er.id and r3.status='yes'),'[]'::jsonb),
     'categories',coalesce((select jsonb_agg(jsonb_build_object(
       'category',ec.category,'total_count',ec.total_count,'yes_count',ec.yes_count
     ) order by ec.category) from event_categories ec where ec.event_id=er.id),'[]'::jsonb)
