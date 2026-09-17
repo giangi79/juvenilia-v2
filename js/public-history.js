@@ -1,0 +1,42 @@
+import { db } from './supabase.js';
+import { formatDate, toast } from './ui.js';
+
+const $=id=>document.getElementById(id);
+let historyData={summary:{},events:[],athletes:[],categories:[]};
+let loaded=false;
+
+function percentage(value){return `${Math.round(Number(value)||0)}%`}
+function eventStatus(e){return e.is_archived?{key:'archived',label:'ARCHIVIATA'}:{key:'published',label:'APERTA'}}
+function eventDays(e){return Array.isArray(e.event_days)&&e.event_days.length?e.event_days.join(' · '):'—'}
+function addCell(tr,label,value,className=''){const td=document.createElement('td');td.dataset.label=label;if(className)td.className=className;td.textContent=value;tr.append(td)}
+
+function renderSummary(){const s=historyData.summary||{},box=$('publicHistorySummary');box.replaceChildren();[
+  ['fa-flag-checkered','Gare',s.events_total||0],
+  ['fa-users','Atleti',s.athletes_total||0],
+  ['fa-circle-check','Partecipazioni',s.yes_total||0],
+  ['fa-chart-line','Presenza',percentage(s.participation_rate)]
+].forEach(([icon,label,value])=>{const card=document.createElement('div');card.className='public-history-stat';const i=document.createElement('i');i.className=`fas ${icon}`;const copy=document.createElement('div');const strong=document.createElement('strong');strong.textContent=value;const span=document.createElement('span');span.textContent=label;copy.append(strong,span);card.append(i,copy);box.append(card)})}
+
+function renderEvents(){const box=$('publicHistoryEvents'),q=$('publicHistoryEventSearch').value.trim().toLocaleLowerCase('it'),filter=$('publicHistoryEventFilter').value;box.replaceChildren();const rows=historyData.events.filter(e=>(!q||`${e.title} ${eventDays(e)}`.toLocaleLowerCase('it').includes(q))&&(filter==='all'||eventStatus(e).key===filter));if(!rows.length){box.innerHTML='<p class="card muted">Nessuna gara trovata.</p>';return}rows.forEach(e=>{const st=eventStatus(e),card=document.createElement('article');card.className='public-history-event card';const head=document.createElement('div');head.className='public-history-event-head';const title=document.createElement('div');const kicker=document.createElement('span');kicker.className=`history-status ${st.key}`;kicker.textContent=st.label;const h=document.createElement('h3');h.textContent=e.title;const days=document.createElement('p');days.innerHTML='<i class="fas fa-calendar-days" aria-hidden="true"></i> ';days.append(document.createTextNode(eventDays(e)));title.append(kicker,h,days);const rate=document.createElement('div');rate.className='public-history-rate';rate.innerHTML=`<strong>${percentage(e.participation_rate)}</strong><span>partecipazione</span>`;head.append(title,rate);const stats=document.createElement('div');stats.className='public-history-event-stats';[['Confermati',e.yes_count,'yes'],['Non partecipano',e.no_count,'no'],['In attesa',e.pending_count,'pending'],['Totale',e.total_count,'total']].forEach(([label,value,kind])=>{const d=document.createElement('div');d.className=`history-mini-stat ${kind}`;const strong=document.createElement('strong');strong.textContent=value;const span=document.createElement('span');span.textContent=label;d.append(strong,span);stats.append(d)});card.append(head,stats);if(Array.isArray(e.categories)&&e.categories.length){const cats=document.createElement('div');cats.className='public-history-event-categories';e.categories.forEach(c=>{const chip=document.createElement('span');chip.textContent=`${c.category}: ${c.yes_count}/${c.total_count}`;cats.append(chip)});card.append(cats)}if(!e.is_archived&&e.slug){const a=document.createElement('a');a.className='public-history-event-link';a.href=`?gara=${encodeURIComponent(e.slug)}`;a.textContent='Apri iscrizioni';card.append(a)}box.append(card)})}
+
+function renderAthletes(){const body=$('publicHistoryAthletes'),q=$('publicHistoryAthleteSearch').value.trim().toLocaleLowerCase('it'),cat=$('publicHistoryAthleteCategory').value;body.replaceChildren();historyData.athletes.filter(a=>(!q||a.full_name.toLocaleLowerCase('it').includes(q))&&(cat==='all'||a.category===cat)).forEach(a=>{const tr=document.createElement('tr');addCell(tr,'Atleta',a.full_name);addCell(tr,'Categoria',a.category||'—');addCell(tr,'Gare',String(a.total_count),'history-number');addCell(tr,'Partecipate',String(a.yes_count),'history-number');addCell(tr,'Non partecipate',String(a.no_count),'history-number');addCell(tr,'In attesa',String(a.pending_count),'history-number');addCell(tr,'Presenza',percentage(a.participation_rate),'history-percent');body.append(tr)})}
+
+function renderCategories(){const box=$('publicHistoryCategories');box.replaceChildren();historyData.categories.forEach(c=>{const card=document.createElement('article');card.className='public-category-card card';const h=document.createElement('h3');h.textContent=c.category||'Senza categoria';const rate=document.createElement('strong');rate.className='public-category-rate';rate.textContent=percentage(c.participation_rate);const bar=document.createElement('div');bar.className='public-history-bar';const fill=document.createElement('span');fill.style.width=`${Math.min(100,Math.max(0,Number(c.participation_rate)||0))}%`;bar.append(fill);const p=document.createElement('p');p.textContent=`${c.yes_count} partecipazioni su ${c.total_count} presenze nelle liste gara`;card.append(h,rate,bar,p);box.append(card)})}
+
+function populateCategories(){const select=$('publicHistoryAthleteCategory');const old=select.value;select.replaceChildren(new Option('Tutte le categorie','all'));[...new Set(historyData.athletes.map(a=>a.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'it')).forEach(c=>select.append(new Option(c,c)));select.value=[...select.options].some(o=>o.value===old)?old:'all'}
+function renderAll(){renderSummary();populateCategories();renderEvents();renderAthletes();renderCategories()}
+
+async function loadHistory(){if(loaded)return;const {data,error}=await db.rpc('v2_get_public_history');if(error){toast('Storico non disponibile: '+error.message);return}historyData=data||historyData;loaded=true;renderAll()}
+async function openHistory(){await loadHistory();if(!loaded)return;$('eventsList').classList.add('hidden');$('eventView').classList.add('hidden');$('publicHistoryView').classList.remove('hidden');$('eventTitle').textContent='Storico Juvenilia';$('eventDescription').textContent='Gare e statistiche della squadra';window.scrollTo({top:0,behavior:'auto'})}
+function closeHistory(){$('publicHistoryView').classList.add('hidden');const route=new URLSearchParams(location.search).get('gara')||new URLSearchParams(location.search).get('event');(route?$('eventView'):$('eventsList')).classList.remove('hidden');window.dispatchEvent(new PopStateEvent('popstate'));window.scrollTo({top:0,behavior:'auto'})}
+function showPanel(name){['Events','Athletes','Categories'].forEach(x=>{const active=x.toLowerCase()===name;$(`publicHistory${x}Btn`).classList.toggle('active',active);$(`publicHistory${x}Panel`).classList.toggle('hidden',!active)})}
+
+$('openPublicHistory')?.addEventListener('click',openHistory);
+$('closePublicHistory')?.addEventListener('click',closeHistory);
+$('publicHistoryEventsBtn')?.addEventListener('click',()=>showPanel('events'));
+$('publicHistoryAthletesBtn')?.addEventListener('click',()=>showPanel('athletes'));
+$('publicHistoryCategoriesBtn')?.addEventListener('click',()=>showPanel('categories'));
+$('publicHistoryEventSearch')?.addEventListener('input',renderEvents);
+$('publicHistoryEventFilter')?.addEventListener('change',renderEvents);
+$('publicHistoryAthleteSearch')?.addEventListener('input',renderAthletes);
+$('publicHistoryAthleteCategory')?.addEventListener('change',renderAthletes);
