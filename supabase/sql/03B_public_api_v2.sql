@@ -229,6 +229,7 @@ begin
             'category', coalesce(r.category_override, a.category),
             'gender', a.gender,
             'status', r.status,
+            'has_companion', r.companion_name is not null and btrim(r.companion_name) <> '',
             'race_day', r.race_day,
             'effective_deadline',
               public.v2_effective_registration_deadline(
@@ -379,6 +380,10 @@ begin
 
   v_clean_name := nullif(btrim(coalesce(p_companion_name, '')), '');
 
+  if v_clean_name is null then
+    raise exception 'COMPANION_NAME_REQUIRED';
+  end if;
+
   if v_clean_name is not null and char_length(v_clean_name) > 120 then
     raise exception 'COMPANION_NAME_TOO_LONG';
   end if;
@@ -387,7 +392,13 @@ begin
   set companion_name = v_clean_name
   where event_id = v_event_id
     and athlete_id = p_athlete_id
+    and status = 'yes'
+    and nullif(btrim(companion_name), '') is null
   returning id into v_registration_id;
+
+  if not found then
+    raise exception 'COMPANION_ALREADY_SET';
+  end if;
 
   return jsonb_build_object('ok', true);
 end;

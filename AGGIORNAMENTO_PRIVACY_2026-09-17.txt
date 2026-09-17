@@ -1,0 +1,25 @@
+AGGIORNAMENTO PRIVACY E GESTIONE OMONIMI
+=========================================
+
+1. Carica sul sito tutti i file di questo pacchetto, sostituendo quelli precedenti.
+
+2. In Supabase apri SQL Editor ed esegui con "Run without RLS":
+   supabase/sql/42_privacy_pubblica_e_id_righe.sql
+
+Lo script 42 è necessario anche se il database V2 era già stato configurato.
+
+MODIFICHE INCLUSE
+-----------------
+- La data di nascita non viene più restituita dalla pagina pubblica.
+- Il nome dell'accompagnatore non viene più restituito o mostrato al pubblico.
+- L'accompagnatore inserito resta visibile e modificabile nel pannello Admin.
+- Dopo il primo inserimento il box accompagnatore viene bloccato per il pubblico;
+  solo l'Admin può correggere o sostituire il nome.
+- Gli UUID di evento, timer e iscrizione non necessari sono stati rimossi
+  dalle risposte pubbliche.
+- athlete_id resta temporaneamente necessario per salvare le risposte pubbliche.
+- Le righe degli atleti sono associate tramite ID e non tramite nome, evitando
+  errori in presenza di due atleti omonimi.
+
+La futura registrazione tramite email potrà sostituire l'identificazione pubblica
+attuale senza dover ripristinare i dati rimossi.

@@ -48,6 +48,7 @@ begin
         'category',coalesce(r.category_override,a.category),
         'gender',a.gender,
         'status',r.status,
+        'has_companion',r.companion_name is not null and btrim(r.companion_name)<>'',
         'race_day',r.race_day,
         'effective_deadline',public.v2_effective_registration_deadline(v_event.id,a.id)
       ) order by coalesce(r.category_override,a.category),a.full_name)
@@ -98,6 +99,8 @@ as $$
 declare
   v_event_id uuid;
   v_clean_name text;
+  v_status text;
+  v_existing_name text;
 begin
   select id into v_event_id
   from public.v2_events
@@ -107,10 +110,18 @@ begin
   perform public.v2_assert_registration_editable(v_event_id,p_athlete_id);
   v_clean_name:=nullif(upper(btrim(coalesce(p_companion_name,''))), '');
   if v_clean_name is null then raise exception 'COMPANION_NAME_REQUIRED'; end if;
+
+  select status,companion_name into v_status,v_existing_name
+  from public.v2_event_registrations
+  where event_id=v_event_id and athlete_id=p_athlete_id
+  for update;
+  if not found then raise exception 'REGISTRATION_NOT_FOUND'; end if;
+  if v_status<>'yes' then raise exception 'ATHLETE_NOT_PARTICIPATING'; end if;
+  if nullif(btrim(v_existing_name),'') is not null then raise exception 'COMPANION_ALREADY_SET'; end if;
+
   update public.v2_event_registrations
   set companion_name=v_clean_name
-  where event_id=v_event_id and athlete_id=p_athlete_id and status='yes';
-  if not found then raise exception 'ATHLETE_NOT_PARTICIPATING'; end if;
+  where event_id=v_event_id and athlete_id=p_athlete_id;
   return jsonb_build_object('ok',true);
 end;
 $$;
