@@ -23,6 +23,7 @@ event_rows as (
     e.slug,
     e.is_archived,
     e.is_published,
+    e.registration_deadline,
     e.created_at,
     coalesce((select c.value from public.v2_event_config c where c.event_id=e.id and c.key='event_days' limit 1),'[]'::jsonb) as event_days,
     count(r.id)::integer as total_count,
@@ -31,7 +32,7 @@ event_rows as (
     count(*) filter (where r.status='pending')::integer as pending_count
   from eligible_events e
   left join public.v2_event_registrations r on r.event_id=e.id
-  group by e.id,e.title,e.slug,e.is_archived,e.is_published,e.created_at
+  group by e.id,e.title,e.slug,e.is_archived,e.is_published,e.registration_deadline,e.created_at
 ),
 event_categories as (
   select
@@ -121,7 +122,8 @@ select jsonb_build_object(
     'attended_events',coalesce((select jsonb_agg(jsonb_build_object(
       'title',er.title,
       'event_days',er.event_days,
-      'is_archived',er.is_archived
+      'is_archived',er.is_archived,
+      'is_registration_closed',(er.is_archived or (er.registration_deadline is not null and er.registration_deadline<=now()))
     ) order by er.created_at desc)
     from public.v2_event_registrations r2
     join event_rows er on er.id=r2.event_id
