@@ -1,2 +1,5 @@
 [functions.telegram-dispatch]
 verify_jwt = false
+
+[functions.results-import]
+verify_jwt = false

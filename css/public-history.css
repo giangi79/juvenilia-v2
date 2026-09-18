@@ -3,3 +3,16 @@
 .public-history-attendees-button{display:inline-flex;align-items:center;gap:8px;margin-top:15px;padding:9px 13px;border:1px solid #4298cc;border-radius:10px;background:#173f5c;color:#e7f7ff;font-weight:800;cursor:pointer}.public-history-attendees-button:hover{background:#20577e}.public-history-attendees{margin-top:10px;padding:13px;border:1px solid #355a78;border-radius:12px;background:#0d2234}.public-history-attendees ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0;padding:0;list-style:none}.public-history-attendees li{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:8px;background:#17324a}.public-history-attendees li span{color:#9fc1d8;font-size:.78rem;text-align:right}.public-history-attendees p{margin:0;color:#a9c3d8}
 @media(max-width:850px){.public-history-summary{grid-template-columns:repeat(2,1fr)}.public-history-grid{grid-template-columns:1fr}.public-category-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.hero-actions{flex-direction:column;align-items:flex-end;gap:7px}.hero-actions .admin-link{margin-top:0}.hero-actions>a.admin-link{order:1}.hero-actions>.public-history-open{order:2}.public-history-summary{grid-template-columns:1fr 1fr;gap:8px}.public-history-stat{padding:12px;gap:9px}.public-history-stat i{width:36px;height:36px}.public-history-stat strong{font-size:1.25rem}.public-history-event-head{display:block}.public-history-rate{text-align:left;margin-top:12px}.public-history-event-stats{grid-template-columns:1fr 1fr}.public-category-grid{grid-template-columns:1fr}.public-athlete-detail ul,.public-history-attendees ul{grid-template-columns:1fr}.public-athlete-detail li{display:block}.public-athlete-detail li span{display:block;margin-top:4px;text-align:left}}
+
+/* Risultati gara nella scheda pubblica dell'atleta */
+.public-athlete-detail li{display:block}
+.public-athlete-event-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.public-athlete-event-head>span{color:#a9c3d8;text-align:right}
+.public-athlete-event-button{padding:0;border:0;background:transparent;color:#8ed8ff;font:inherit;font-weight:800;text-align:left;cursor:pointer}
+.public-athlete-event-button:hover,.public-athlete-event-button:focus-visible{color:#dff5ff;text-decoration:underline}
+.public-athlete-event-button i{margin-right:5px}
+.public-athlete-event-results{display:grid;gap:7px;margin-top:10px;padding-top:10px;border-top:1px solid #355a78}
+.public-athlete-result{padding:9px 10px;border-radius:8px;background:#0d2234}
+.public-athlete-result small,.public-athlete-result strong{display:block}
+.public-athlete-result small{margin-bottom:4px;color:#8ed8ff}
+.public-athlete-result strong{color:#e7f7ff;font-size:.83rem;line-height:1.45;white-space:pre-wrap}

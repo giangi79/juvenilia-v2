@@ -1,0 +1,69 @@
+PROVA IMPORTAZIONE RISULTATI - JUVENILIA V2
+============================================================
+
+Questa versione accetta link HTTPS del portale:
+https://attivita.rollergames.it/
+
+1) DATABASE SUPABASE
+--------------------
+Apri Supabase > SQL Editor ed esegui con "Run without RLS":
+
+supabase/sql/45_importazione_risultati_gara.sql
+supabase/sql/46_risultati_pubblici_storico.sql
+
+Lo script aggiunge:
+- il link risultati alla gara;
+- la tabella privata dei risultati importati;
+- la funzione amministrativa di salvataggio.
+- la funzione pubblica che mostra nello storico soltanto i risultati salvati.
+
+2) EDGE FUNCTION
+----------------
+Su Windows puoi avviare direttamente:
+
+DEPLOY_PROVA_RISULTATI.bat
+
+Il Project Ref attuale è già compilato: premi Invio per confermarlo.
+
+In alternativa, dal terminale nella cartella principale del progetto, esegui:
+
+supabase login
+supabase link --project-ref IL_TUO_PROJECT_REF
+supabase functions deploy results-import --no-verify-jwt
+
+La funzione usa automaticamente le chiavi Supabase già disponibili alle
+Edge Functions. Non richiede nuove password o token personalizzati.
+
+3) FILE DEL SITO
+----------------
+Carica normalmente tutti i file del pacchetto sul sito, sostituendo quelli
+esistenti. Prima di farlo conserva una copia della versione funzionante.
+
+4) UTILIZZO
+------------
+- Accedi all'Area Admin.
+- Apri la scheda "Gara" e seleziona la gara interessata.
+- Nel riquadro "Importa risultati" incolla il link RollerGames.
+- Premi "Analizza risultati".
+- Controlla atleti riconosciuti, righe trovate e atleti non riconosciuti.
+- Solo se l'anteprima è corretta premi "Conferma e salva risultati".
+- In seguito usa "Mostra risultati salvati" per consultarli nuovamente,
+  raggruppati per atleta.
+- Nella pagina pubblica apri Storico > Atleti, seleziona l'atleta e premi il
+  nome di una gara: se sono stati salvati risultati, compariranno sotto.
+- Per le pagine "CLASSIFICA FINALE" viene mostrata soltanto la posizione
+  finale (per esempio 7°), mantenendo sopra il nome della prova.
+- Le prove denominate "Formula Tiezzi" vengono ignorate completamente.
+
+L'analisi considera esclusivamente gli atleti della gara con stato PARTECIPA.
+Una nuova importazione sostituisce i risultati precedentemente salvati per
+quella gara.
+
+LIMITI DELLA PRIMA PROVA
+------------------------
+- Il riconoscimento dipende da come RollerGames costruisce le singole pagine.
+- Il sistema cerca il nome completo dell'atleta nelle tabelle HTML.
+- PDF, file Excel e pagine prodotte esclusivamente via JavaScript non vengono
+  ancora interpretati.
+- Nello storico vengono pubblicati soltanto risultato, gara e nome atleta;
+  link sorgente, UUID e altri dati amministrativi non vengono esposti.
