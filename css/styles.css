@@ -4229,3 +4229,19 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
 .results-import-heading{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.results-import-heading h3{margin:5px 0 7px}.results-import-heading p{margin:0;color:#bad0df;max-width:760px}.results-saved-state{padding:6px 9px;border-radius:999px;background:#17324a;color:#9fd9fb;font-size:.74rem;font-weight:800;white-space:nowrap}.results-url-label{display:block;margin-top:17px}.results-url-label input{width:100%;margin-top:7px}.results-import-status{margin-top:13px}.results-import-preview{margin-top:16px;display:grid;gap:12px}.results-import-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.results-import-summary div{padding:12px;border-radius:11px;background:#17324a;text-align:center}.results-import-summary strong,.results-import-summary span{display:block}.results-import-summary strong{font-size:1.35rem}.results-import-summary span{margin-top:3px;color:#a9c3d8;font-size:.7rem;text-transform:uppercase;font-weight:800}.result-match-card{padding:14px;border:1px solid #355a78;border-radius:12px;background:#102a40}.result-match-card h4{margin:0 0 8px}.result-match-card details{margin-top:7px;padding:9px;border-radius:8px;background:#17324a}.result-match-card summary{cursor:pointer;font-weight:800}.result-row{margin-top:8px;padding:8px;border-left:3px solid #42d5aa;color:#d8e8f2;overflow-wrap:anywhere}.result-row small{display:block;margin-top:4px;color:#91aec2}.results-unmatched{padding:13px;border:1px solid #81622a;border-radius:11px;background:#453718}.results-unmatched h4{margin:0 0 8px;color:#ffe19a}.results-unmatched p{margin:0;color:#ffe8ba}.results-warning{padding:10px;border-radius:9px;background:#45252b;color:#ffc4cb}
 .saved-results-panel{display:grid;gap:10px;margin-top:17px;padding-top:16px;border-top:1px solid #355a78}.saved-results-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.saved-results-heading h4{margin:0}.saved-results-heading span{padding:5px 8px;border-radius:999px;background:#17324a;color:#9fd9fb;font-size:.75rem;font-weight:800}.saved-athlete-results{padding:13px;border:1px solid #355a78;border-radius:11px;background:#102a40}.saved-athlete-results h5{margin:0 0 9px;color:#dff5ff;font-size:.96rem}.saved-result-row{padding:9px 10px;border-radius:8px;background:#17324a}.saved-result-row+.saved-result-row{margin-top:7px}.saved-result-row small{display:block;margin-top:4px;color:#91aec2}
 @media(max-width:760px){.results-import-heading{display:block}.results-saved-state{display:inline-block;margin-top:10px}.results-import-summary{grid-template-columns:1fr 1fr}}
+
+/* Pista Juvenilia sullo sfondo: il velo scuro mantiene leggibili i contenuti. */
+body,body.dark,html.dark body,[data-theme="dark"] body{
+  background-color:#152638;
+  background-image:linear-gradient(180deg,rgba(13,29,46,.64),rgba(13,29,46,.82)),url("../assets/pista-sfondo.webp");
+  background-position:center,center 48%;
+  background-size:cover,cover;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
+@media(max-width:700px){
+  body,body.dark,html.dark body,[data-theme="dark"] body{
+    background-position:center,48% center;
+    background-attachment:scroll;
+  }
+}
