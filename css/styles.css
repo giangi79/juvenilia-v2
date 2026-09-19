@@ -4232,16 +4232,22 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
 
 /* Pista Juvenilia sullo sfondo: il velo scuro mantiene leggibili i contenuti. */
 body,body.dark,html.dark body,[data-theme="dark"] body{
+  isolation:isolate;
   background-color:#152638;
+  background-image:none;
+}
+body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::before{
+  opacity:1;
+  mask-image:none;
+  -webkit-mask-image:none;
   background-image:linear-gradient(180deg,rgba(13,29,46,.64),rgba(13,29,46,.82)),url("../assets/pista-sfondo.webp");
   background-position:center,center 48%;
-  background-size:cover,cover;
+  background-size:cover;
   background-repeat:no-repeat;
-  background-attachment:fixed;
 }
 @media(max-width:700px){
-  body,body.dark,html.dark body,[data-theme="dark"] body{
-    background-position:center,48% center;
-    background-attachment:scroll;
+  body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::before{
+    background-image:linear-gradient(rgba(13,29,46,.52),rgba(13,29,46,.68)),url("../assets/pista-sfondo.webp");
+    background-position:center,24% center;
   }
 }
