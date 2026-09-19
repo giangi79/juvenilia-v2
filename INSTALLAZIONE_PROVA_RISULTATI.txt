@@ -54,6 +54,9 @@ esistenti. Prima di farlo conserva una copia della versione funzionante.
 - Per le pagine "CLASSIFICA FINALE" viene mostrata soltanto la posizione
   finale (per esempio 7°), mantenendo sopra il nome della prova.
 - Le prove denominate "Formula Tiezzi" vengono ignorate completamente.
+- L'importazione considera solo le righe in cui compare la societa Juvenilia.
+  Per correggere eventuali omonimi gia salvati, ripeti "Analizza risultati"
+  e "Conferma e salva risultati": la nuova importazione sostituisce la vecchia.
 
 L'analisi considera esclusivamente gli atleti della gara con stato PARTECIPA.
 Una nuova importazione sostituisce i risultati precedentemente salvati per

@@ -92,6 +92,10 @@ function athleteMatches(row:string,name:string){
   return tokens.length>=2&&tokens.every(token=>hay.includes(token));
 }
 
+function isJuveniliaResult(cells:string[]){
+  return cells.some(cell=>normalize(cell).split(' ').includes('JUVENILIA'));
+}
+
 function conciseResult(title:string,cells:string[],fallback:string){
   if(normalize(title).includes('CLASSIFICA FINALE')){
     const position=String(cells[0]||'').trim();
@@ -148,6 +152,7 @@ Deno.serve(async(req:Request)=>{
         const title=pageTitle(html,url);
         if(normalize(title).includes('FORMULA TIEZZI'))continue;
         for(const row of rowsOf(html)){
+          if(!isJuveniliaResult(row.cells))continue;
           for(const athlete of athletes){
             if(!athleteMatches(row.text,athlete.full_name))continue;
             const list=found.get(athlete.athlete_id)!;
