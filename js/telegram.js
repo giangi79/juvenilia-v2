@@ -1,4 +1,4 @@
-import './event-categories.js?v=defaults-3';
+import './event-categories.js?v=defaults-4';
 import './race-days-admin.js?v=giorni-gara-1';
 import './event-header-admin.js?v=1';
 import './admin-mobile-cards.js?v=1';

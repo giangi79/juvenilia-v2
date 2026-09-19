@@ -5,6 +5,7 @@ const CATEGORIES=['GIOVANISSIMI','ESORDIENTI','R12','RAGAZZI','ALLIEVI','JUNIOR'
 const $=id=>document.getElementById(id);
 const clean=v=>String(v??'').trim().toUpperCase();
 let loadedAllowed=[...CATEGORIES];
+let creatingEvent=false;
 
 function ensureUI(){
   if($('eventCategoriesChecks'))return;
@@ -36,12 +37,14 @@ function applyPublicSwitches(map){
   if($('advShowCosts'))$('advShowCosts').checked=map.show_category_costs===true;
 }
 async function loadForEvent(){
+  if(creatingEvent)return;
   const eventId=$('eventSelect')?.value;
   if(!eventId){loadedAllowed=[...CATEGORIES];render(loadedAllowed);return}
   const {data:{session}}=await db.auth.getSession();
-  if(!session)return;
+  if(!session||creatingEvent||$('eventSelect')?.value!==eventId)return;
   const keys=['allowed_categories','show_info_box','show_companion','show_category_costs'];
   const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',keys);
+  if(creatingEvent||$('eventSelect')?.value!==eventId)return;
   if(error){toast('Errore caricamento impostazioni gara: '+error.message);return}
   const map=Object.fromEntries((data||[]).map(x=>[x.key,x.value]));
   const publicDefaults=['show_info_box','show_companion','show_category_costs'];
@@ -49,6 +52,7 @@ async function loadForEvent(){
   if(missing.length){
     const rows=missing.map(key=>({event_id:eventId,key,value:false,is_public:true}));
     const {error:defaultError}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
+    if(creatingEvent||$('eventSelect')?.value!==eventId)return;
     if(defaultError){toast('Errore salvataggio impostazioni iniziali: '+defaultError.message);return}
     missing.forEach(key=>{map[key]=false});
   }
@@ -92,9 +96,9 @@ function showNewEventDefaultsInUI(){
 ensureUI();
 $('selectAllEventCategories')?.addEventListener('click',()=>render(CATEGORIES));
 $('clearEventCategories')?.addEventListener('click',()=>render([]));
-$('newEventBtn')?.addEventListener('click',()=>{loadedAllowed=[...CATEGORIES];render(loadedAllowed);showNewEventDefaultsInUI()});
-$('eventSelect')?.addEventListener('change',()=>setTimeout(loadForEvent,0));
-['registrationsEventSelect','configEventSelect','advancedEventSelect','exportEventSelect'].forEach(id=>$(id)?.addEventListener('change',()=>setTimeout(loadForEvent,0)));
+$('newEventBtn')?.addEventListener('click',()=>{creatingEvent=true;loadedAllowed=[...CATEGORIES];render(loadedAllowed);showNewEventDefaultsInUI()});
+$('eventSelect')?.addEventListener('change',()=>{creatingEvent=false;setTimeout(loadForEvent,0)});
+['registrationsEventSelect','configEventSelect','advancedEventSelect','exportEventSelect'].forEach(id=>$(id)?.addEventListener('change',()=>{creatingEvent=false;setTimeout(loadForEvent,0)}));
 document.addEventListener('juvenilia:event-changed',()=>setTimeout(loadForEvent,0));
 
 db.auth.onAuthStateChange((event,session)=>{
@@ -130,6 +134,8 @@ if(saveBtn){
       }
     }
     await originalSave?.call(saveBtn,event);
+    if(wasCreating&&$('saveEventBtn')?.textContent?.toLowerCase().includes('crea'))return;
+    creatingEvent=false;
     let eventId=$('eventSelect')?.value||'';
     if(wasCreating){
       const {data:newEvents,error}=await db.from('v2_events').select('id,created_at').order('created_at',{ascending:false});
