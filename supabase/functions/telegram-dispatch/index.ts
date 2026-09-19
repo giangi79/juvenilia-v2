@@ -40,6 +40,10 @@ function assertTelegramConfig(){
   if(!BOT_TOKEN||!CHAT_ID)throw new Error('TELEGRAM_NOT_CONFIGURED');
 }
 
+function escapeHtml(value){
+  return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function chunks(text,max=3900){
   const lines=String(text||'').split('\n');
   const out=[];
@@ -67,6 +71,7 @@ async function sendTelegram(text){
       body:JSON.stringify({
         chat_id:CHAT_ID,
         text:part,
+        parse_mode:'HTML',
         disable_web_page_preview:true
       })
     });
@@ -146,22 +151,23 @@ async function buildSummary(eventId,categories=null,label=null){
   const pending=rows.filter(r=>r.status==='pending');
 
   const lines=[
-    '🏁 RIEPILOGO JUVENILIA',
-    `🏆 ${event.title}`,
+    '🏁 <b>JUVENILIA · RIEPILOGO GARA</b>',
+    `🏆 <b>${escapeHtml(event.title)}</b>`,
   ];
-  if(label)lines.push(`⏱ ${label}`);
+  if(label)lines.push(`⏱ ${escapeHtml(label)}`);
   lines.push(
     '',
-    `✅ Partecipa: ${yes.length}`,
-    `❌ Non partecipa: ${no.length}`,
-    `⏳ Da definire: ${pending.length}`,
+    '<b>Situazione iscrizioni</b>',
+    `✅ Partecipa: <b>${yes.length}</b>`,
+    `❌ Non partecipa: <b>${no.length}</b>`,
+    `⏳ Da definire: <b>${pending.length}</b>`,
     ''
   );
 
   const appendGroup=(title,list)=>{
     lines.push(title);
     if(!list.length){
-      lines.push('— Nessuno');
+      lines.push('<i>Nessuno</i>');
       lines.push('');
       return;
     }
@@ -169,20 +175,20 @@ async function buildSummary(eventId,categories=null,label=null){
     for(const r of list){
       const cat=categoryOf(r);
       if(cat!==lastCat){
-        lines.push(cat);
+        lines.push(`🏅 <b>${escapeHtml(cat)}</b>`);
         lastCat=cat;
       }
-      let name=`• ${r.athlete?.full_name||'Atleta'}`;
-      if(r.race_day)name+=` — ${r.race_day}`;
-      if(r.companion_name&&r.status==='yes')name+=` — acc. ${r.companion_name}`;
+      let name=`• ${escapeHtml(r.athlete?.full_name||'Atleta')}`;
+      if(r.race_day)name+=` · ${escapeHtml(r.race_day)}`;
+      if(r.companion_name&&r.status==='yes')name+=` · acc. ${escapeHtml(r.companion_name)}`;
       lines.push(name);
     }
     lines.push('');
   };
 
-  appendGroup('✅ PARTECIPA',yes);
-  appendGroup('❌ NON PARTECIPA',no);
-  appendGroup('⏳ DA DEFINIRE',pending);
+  appendGroup('✅ <b>PARTECIPANO</b>',yes);
+  appendGroup('❌ <b>NON PARTECIPANO</b>',no);
+  appendGroup('⏳ <b>DA DEFINIRE</b>',pending);
   return lines.join('\n').trim();
 }
 
@@ -204,12 +210,12 @@ function statusMessage(item){
   const symbol=p.status==='yes'?'✅':'❌';
   const label=p.status==='yes'?'PARTECIPA':'NON PARTECIPA';
   return [
-    '🏁 JUVENILIA',
-    `🏆 ${p.event_title||'Gara'}`,
+    '🏁 <b>JUVENILIA · ISCRIZIONI</b>',
+    `🏆 <b>${escapeHtml(p.event_title||'Gara')}</b>`,
     '',
-    `${symbol} ${label}`,
-    `👤 ${p.athlete_name||'Atleta'}`,
-    `🏅 ${p.category||'Categoria'}`
+    `${symbol} <b>${label}</b>`,
+    `👤 ${escapeHtml(p.athlete_name||'Atleta')}`,
+    `🏅 ${escapeHtml(p.category||'Categoria')}`
   ].join('\n');
 }
 
@@ -302,9 +308,10 @@ Deno.serve(async req=>{
     if(action==='test'){
       assertTelegramConfig();
       await sendTelegram([
-        '✅ TEST TELEGRAM JUVENILIA RACING TEAM',
-        'Connessione server-side funzionante.',
-        `Admin: ${user.email||user.id}`
+        '✅ <b>JUVENILIA · TEST TELEGRAM</b>',
+        '',
+        'La connessione funziona correttamente.',
+        `👤 Admin: ${escapeHtml(user.email||user.id)}`
       ].join('\n'));
       return json({ok:true,message:'Messaggio di test inviato.'});
     }
