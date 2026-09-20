@@ -1,0 +1,18 @@
+.event-head-grid{display:grid;gap:16px;min-width:0}
+.event-head-grid.has-poster{grid-template-columns:minmax(0,1fr) minmax(205px,280px);align-items:stretch}
+.event-poster-box{min-width:0;padding:14px;border-radius:18px;background:#20394e;border:1px solid #38566d;color:#fff}
+.event-poster-box strong{display:block;margin-bottom:9px;font-size:.9rem;letter-spacing:.08em;text-transform:uppercase}
+.event-poster-open{display:block;width:100%;padding:0;overflow:hidden;border:0;border-radius:12px;background:#10283a;cursor:pointer}
+.event-poster-open img{display:block;width:100%;height:180px;object-fit:contain}
+.event-poster-box small{display:block;margin-top:9px;color:#c9e0ec}
+.poster-dialog{max-width:min(92vw,880px);max-height:94vh;padding:12px;border:1px solid #54718a;border-radius:16px;background:#172e42;color:#fff;box-shadow:0 20px 65px #07142099}
+.poster-dialog::backdrop{background:#071420d9}
+.poster-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:10px}
+.poster-dialog-head button{width:auto;padding:8px 12px}
+.poster-dialog img{display:block;max-width:100%;max-height:calc(94vh - 90px);margin:auto;object-fit:contain}
+.admin-poster-card{margin-top:20px;padding:18px;border:1px solid #d0dce8;border-radius:16px;background:#f5f9fd}
+.admin-poster-card h3{margin:0 0 6px}.admin-poster-card p{margin:0 0 12px}
+.admin-poster-card input[type=file]{max-width:460px}
+.admin-poster-card img{display:block;max-width:min(100%,240px);max-height:300px;margin:12px 0;object-fit:contain;border-radius:10px}
+.admin-poster-card .actions{margin-top:12px}
+@media(max-width:760px){.event-head-grid.has-poster{grid-template-columns:1fr}.event-poster-open img{height:210px}}

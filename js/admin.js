@@ -8,6 +8,62 @@ let registrationsSort=localStorage.getItem('juvenilia_registrations_sort')||'nam
 
 const $=id=>document.getElementById(id);
 const clean=v=>String(v??'').trim();
+const POSTER_BUCKET='juvenilia-locandine';
+let posterPreviewUrl=null,posterBusy=false;
+function setPosterBusy(busy){posterBusy=busy;$('saveEventPosterBtn').disabled=busy||!currentEvent;$('removeEventPosterBtn').disabled=busy;$('eventPosterInput').disabled=busy||!currentEvent}
+function renderAdminPoster(){
+  if(posterPreviewUrl){URL.revokeObjectURL(posterPreviewUrl);posterPreviewUrl=null}
+  $('eventPosterInput').value='';
+  const path=currentEvent?.poster_path;
+  const preview=$('eventPosterPreview');
+  preview.classList.toggle('hidden',!path);
+  preview.src=path?db.storage.from(POSTER_BUCKET).getPublicUrl(path).data.publicUrl:'';
+  $('removeEventPosterBtn').classList.toggle('hidden',!path);
+  $('eventPosterStatus').textContent=currentEvent?(path?'Locandina caricata. Puoi sostituirla o rimuoverla.':'Nessuna locandina caricata.'):'Salva prima la gara per aggiungere una locandina.';
+  setPosterBusy(posterBusy);
+}
+$('eventPosterInput').onchange=()=>{
+  if(posterPreviewUrl)URL.revokeObjectURL(posterPreviewUrl);
+  posterPreviewUrl=null;
+  const file=$('eventPosterInput').files?.[0];
+  if(!file){renderAdminPoster();return}
+  posterPreviewUrl=URL.createObjectURL(file);
+  $('eventPosterPreview').src=posterPreviewUrl;
+  $('eventPosterPreview').classList.remove('hidden');
+  $('eventPosterStatus').textContent=`Pronta da caricare: ${file.name}`;
+};
+$('saveEventPosterBtn').onclick=async()=>{
+  const selected=currentEvent,file=$('eventPosterInput').files?.[0];
+  if(!selected)return toast('Salva prima la gara');
+  if(!file)return toast('Seleziona prima un’immagine');
+  const extension={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];
+  if(!extension||file.size>8388608||!file.size)return toast('Scegli un JPG, PNG o WebP fino a 8 MB');
+  setPosterBusy(true);
+  const path=`${selected.id}/${crypto.randomUUID()}.${extension}`;
+  const previous=selected.poster_path;
+  const storage=db.storage.from(POSTER_BUCKET);
+  try{
+    const {error:uploadError}=await storage.upload(path,file,{contentType:file.type,upsert:false});
+    if(uploadError)throw uploadError;
+    const {error:updateError}=await db.from('v2_events').update({poster_path:path}).eq('id',selected.id);
+    if(updateError){await storage.remove([path]);throw updateError}
+    selected.poster_path=path;
+    if(previous)await storage.remove([previous]);
+    if(currentEvent?.id===selected.id){renderAdminPoster();toast('Locandina caricata')}
+  }catch(error){toast('Errore locandina: '+error.message)}finally{setPosterBusy(false)}
+};
+$('removeEventPosterBtn').onclick=async()=>{
+  const selected=currentEvent,path=selected?.poster_path;
+  if(!path)return;
+  setPosterBusy(true);
+  try{
+    const {error}=await db.from('v2_events').update({poster_path:null}).eq('id',selected.id);
+    if(error)throw error;
+    selected.poster_path=null;
+    await db.storage.from(POSTER_BUCKET).remove([path]);
+    if(currentEvent?.id===selected.id){renderAdminPoster();toast('Locandina rimossa')}
+  }catch(error){toast('Errore locandina: '+error.message)}finally{setPosterBusy(false)}
+};
 
 function slugify(value){
   return clean(value)
@@ -154,7 +210,7 @@ $('eventSelect').onchange=async()=>selectAdminEvent($('eventSelect').value);
   const sel=$(id);
   if(sel)sel.onchange=async()=>selectAdminEvent(sel.value);
 });
-function fillEvent(){const e=currentEvent||{};$('eventTitleInput').value=e.title||'';$('eventSlugInput').value=e.slug||'';$('eventDescriptionInput').value=e.description||'';$('eventDeadlineInput').value=localDate(e.registration_deadline);$('eventPublishedInput').checked=!!e.is_published;$('eventArchivedInput').checked=!!e.is_archived}
+function fillEvent(){const e=currentEvent||{};$('eventTitleInput').value=e.title||'';$('eventSlugInput').value=e.slug||'';$('eventDescriptionInput').value=e.description||'';$('eventDeadlineInput').value=localDate(e.registration_deadline);$('eventPublishedInput').checked=!!e.is_published;$('eventArchivedInput').checked=!!e.is_archived;renderAdminPoster()}
 function updatePublicEventLink(){
   let link=$('openPublicEventLink');
   let directBtn=$('copyDirectEventLink');
@@ -219,6 +275,7 @@ $('deleteEventBtn').onclick=async()=>{
   const {error}=await db.from('v2_events').delete().eq('id',deletingId);
   if(error)return toast('Errore eliminazione gara: '+error.message);
 
+  if(currentEvent.poster_path)await db.storage.from(POSTER_BUCKET).remove([currentEvent.poster_path]);
   toast('Gara eliminata definitivamente');
   currentEvent=null;
   await loadEvents();
