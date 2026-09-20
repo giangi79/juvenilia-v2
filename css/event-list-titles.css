@@ -1,0 +1,14 @@
+/* Il titolo della gara deve essere un unico blocco di testo anche su Safari iOS. */
+#eventsList .event-card > h2:first-child {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* La barra sul bordo della scheda resta l'unico elemento decorativo. */
+#eventsList .event-card > h2:first-child::before {
+  content: none;
+}
