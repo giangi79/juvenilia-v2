@@ -135,7 +135,8 @@ if(saveBtn){
         if(!confirm(`Stai disabilitando: ${removed.join(', ')}.\n\nSaranno rimosse ${affected.length} iscrizioni${answered?`, di cui ${answered} con risposta già registrata`:''}.\n\nContinuare?`))return;
       }
     }
-    await originalSave?.call(saveBtn,event);
+    const savedOk=await originalSave?.call(saveBtn,event);
+    if(savedOk===false)return;
     if(wasCreating&&$('saveEventBtn')?.textContent?.toLowerCase().includes('crea'))return;
     creatingEvent=false;
     let eventId=$('eventSelect')?.value||'';
@@ -156,6 +157,7 @@ if(saveBtn){
       await $('eventSelect')?.onchange?.();
       if(wasCreating)showNewEventDefaultsInUI();
       document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId}}));
+      document.dispatchEvent(new CustomEvent('juvenilia:event-save-complete',{detail:{eventId}}));
       setTimeout(loadForEvent,100);
     }catch(err){toast('Errore gestione gara: '+(err?.message||err))}
   };

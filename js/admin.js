@@ -258,7 +258,7 @@ async function selectAdminEvent(eventId,{reload=true}={}){
   if(!found){
     currentEvent=null;
     populateLinkedEventSelects('');
-    $('saveEventBtn').textContent='Salva modifiche';
+    $('saveEventBtn').textContent='Salva gara';
     $('saveEventBtn').disabled=true;
     $('deleteEventBtn').disabled=true;
     fillEvent();
@@ -269,8 +269,8 @@ async function selectAdminEvent(eventId,{reload=true}={}){
   }
   currentEvent=found;
   populateLinkedEventSelects(found.id);
-  $('saveEventBtn').textContent='Salva modifiche';
-  $('saveEventBtn').disabled=false;
+  $('saveEventBtn').textContent='Salva gara';
+  $('saveEventBtn').disabled=true;
   $('deleteEventBtn').disabled=false;
   $('eventSlugInput').dataset.auto='0';
   fillEvent();
@@ -289,8 +289,8 @@ async function loadEvents(preferredId=currentEvent?.id||''){
   const selected=events.find(e=>e.id===preferredId)||null;
   currentEvent=selected;
   populateLinkedEventSelects(selected?.id||'');
-  $('saveEventBtn').textContent='Salva modifiche';
-  $('saveEventBtn').disabled=!selected;
+  $('saveEventBtn').textContent='Salva gara';
+  $('saveEventBtn').disabled=true;
   $('deleteEventBtn').disabled=!selected;
   fillEvent();
   updatePublicEventLink();
@@ -344,7 +344,7 @@ $('newEventBtn').onclick=()=>{
   updatePublicEventLink();
   $('eventSlugInput').dataset.auto='1';
   $('saveEventBtn').textContent='Crea gara';
-  $('saveEventBtn').disabled=false;
+  $('saveEventBtn').disabled=true;
   $('deleteEventBtn').disabled=true;
   $('eventTitleInput').focus();
   toast('Nuova gara: inserisci il titolo e compila i dati');
@@ -393,14 +393,14 @@ $('saveEventBtn').onclick=async()=>{
   const title=$('eventTitleInput').value.trim();
   const finalSlug=slugify($('eventSlugInput').value || title);
   $('eventSlugInput').value=finalSlug;
-  const row={title:title,slug:finalSlug,season_id:$('eventSeasonInput').value||currentSeason()?.id||null,description:$('eventDescriptionInput').value.trim()||null,registration_deadline:$('eventDeadlineInput').value?new Date($('eventDeadlineInput').value).toISOString():null,is_published:$('eventPublishedInput').checked,is_archived:$('eventArchivedInput').checked};if(!row.title)return toast('Il titolo della gara è obbligatorio');
-  if(!row.season_id)return toast('Seleziona la stagione della gara');
-  if(!row.slug)return toast('Lo slug non è valido. Usa lettere, numeri e trattini.');const creating=!currentEvent;
+  const row={title:title,slug:finalSlug,season_id:$('eventSeasonInput').value||currentSeason()?.id||null,description:$('eventDescriptionInput').value.trim()||null,registration_deadline:$('eventDeadlineInput').value?new Date($('eventDeadlineInput').value).toISOString():null,is_published:$('eventPublishedInput').checked,is_archived:$('eventArchivedInput').checked};if(!row.title){toast('Il titolo della gara è obbligatorio');return false}
+  if(!row.season_id){toast('Seleziona la stagione della gara');return false}
+  if(!row.slug){toast('Lo slug non è valido. Usa lettere, numeri e trattini.');return false}const creating=!currentEvent;
   const q=creating
     ? db.from('v2_events').insert(row).select().single()
     : db.from('v2_events').update(row).eq('id',currentEvent.id).select().single();
   const {data:saved,error}=await q;
-  if(error)return toast(error.message);
+  if(error){toast(error.message);return false}
   toast(creating?'Gara creata':'Modifiche salvate');
 
   if(creating && saved?.id){
@@ -438,12 +438,12 @@ $('saveEventBtn').onclick=async()=>{
   if(saved){
     currentEvent=events.find(e=>e.id===saved.id)||saved;
     $('eventSelect').value=saved.id;
-    $('saveEventBtn').textContent='Salva modifiche';
+    $('saveEventBtn').textContent='Salva gara';
     $('eventSlugInput').dataset.auto='0';
     fillEvent();
   }
   await Promise.all([loadAthletes(),loadRegistrations(),loadTimers(),loadConfig()]);
-  renderStats()};
+  renderStats();return true};
 
 async function loadAthletes(){
   const season=selectedAthleteSeason();
@@ -475,13 +475,13 @@ function renderAthletes(){
     [a.gender||'-',a.is_active?'Sì':'No'].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});
     const td=document.createElement('td');td.className='athlete-actions-cell';
 
-    const saveCategory=document.createElement('button');saveCategory.textContent='Salva categoria';saveCategory.className='secondary';
-    saveCategory.onclick=async()=>{
+    catSelect.onchange=async()=>{
       const category=clean(catSelect.value).toUpperCase();
-      if(!category)return toast('Seleziona una categoria');
-      if(category===a.category)return toast('Categoria già impostata');
+      if(!category){catSelect.value=a.category||'';return toast('Seleziona una categoria')}
+      if(category===a.category)return;
+      catSelect.disabled=true;
       const {data:updated,error}=await db.rpc('v2_update_season_athlete_category',{p_season_id:a.season_id,p_athlete_id:a.id,p_category:category});
-      if(error)return toast('Errore modifica categoria: '+error.message);
+      if(error){catSelect.disabled=false;catSelect.value=a.category||'';return toast('Errore modifica categoria: '+error.message)}
       toast(`Categoria di ${a.full_name} aggiornata${updated?` anche in ${updated} iscrizioni ancora in attesa`:''}`);
       await loadAthletes();await loadRegistrations();
       document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
@@ -499,7 +499,7 @@ function renderAthletes(){
       document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
     };
 
-    td.append(saveCategory,toggle);tr.append(td);$('athletesBody').append(tr);
+    td.append(toggle);tr.append(td);$('athletesBody').append(tr);
   });
 }
 $('addAthleteBtn').onclick=async()=>{
@@ -621,6 +621,7 @@ $('saveConfigBtn').onclick=async()=>{
   ].map(([key,value])=>({event_id:currentEvent.id,key,value,is_public:true}));
   const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
   if(error)return toast(error.message);toast('Configurazione pubblica salvata');await loadConfig();
+  document.dispatchEvent(new CustomEvent('juvenilia:config-save-complete'));
 };
 
 function categoryOf(r){return r.category_override||r.category_snapshot||r.athlete?.category||''}

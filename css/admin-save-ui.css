@@ -1,0 +1,20 @@
+.admin-save-state{align-self:center;font-size:.85rem;font-weight:800;min-height:1.2em;color:#63768a}
+.admin-save-state.dirty{color:#a94f00}
+.admin-save-state.saved{color:#177245}
+.admin-mobile-save-dock{display:none}
+
+@media(max-width:760px){
+  body[data-admin-save-group="event"] #saveEventBtn,
+  body[data-admin-save-group="config"] #saveConfigBtn,
+  body[data-admin-save-group="advanced"] #advSaveConfigBtn{display:none!important}
+  body[data-admin-save-group="event"] #eventSaveState,
+  body[data-admin-save-group="config"] #configSaveState,
+  body[data-admin-save-group="advanced"] #advancedSaveState{display:none!important}
+  .admin-mobile-save-dock.visible{position:fixed;z-index:1100;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.26);border-radius:16px;background:rgba(15,48,73,.96);box-shadow:0 12px 34px rgba(0,0,0,.3);backdrop-filter:blur(12px)}
+  .admin-mobile-save-dock span{color:#dceaf4;font-size:.78rem;font-weight:800;line-height:1.2}
+  .admin-mobile-save-dock span.dirty{color:#ffd4a6}
+  .admin-mobile-save-dock span.saved{color:#adf0c9}
+  .admin-mobile-save-dock button{flex:0 0 auto;min-height:42px;padding:9px 15px;border-radius:11px}
+  .admin-mobile-save-dock button:disabled{opacity:.48}
+  #adminApp{padding-bottom:82px}
+}
