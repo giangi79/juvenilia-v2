@@ -2,7 +2,7 @@ import { db } from './supabase.js';
 import { WHATSAPP_NUMBER } from './config.js';
 import { toast, formatDate } from './ui.js';
 
-let events=[],currentEvent=null,athletes=[],registrations=[],timers=[],configRows=[];
+let seasons=[],selectedAthleteSeasonId='',events=[],currentEvent=null,athletes=[],registrations=[],timers=[],configRows=[];
 let selectedRegistrationIds=new Set();
 let registrationsSort=localStorage.getItem('juvenilia_registrations_sort')||'name';
 
@@ -156,11 +156,84 @@ function openSettingsPanel(name){
 document.querySelectorAll('.settings-choice').forEach(b=>b.onclick=()=>openSettingsPanel(b.dataset.settingsPanel));
 
 async function loadAll(){
-  await loadEvents(); await Promise.all([loadAthletes(),loadRegistrations(),loadTimers(),loadConfig()]);renderStats();
+  await loadSeasons();
+  await loadEvents();
+  await Promise.all([loadAthletes(),loadRegistrations(),loadTimers(),loadConfig()]);renderStats();
 
   populateTimerEventSelect();
   renderTimerCategoryChecks();
 }
+function currentSeason(){return seasons.find(s=>s.is_current)||seasons[0]||null}
+function selectedAthleteSeason(){return seasons.find(s=>s.id===selectedAthleteSeasonId)||currentSeason()}
+function formatShortDate(value){if(!value)return'—';return new Date(`${value}T12:00:00`).toLocaleDateString('it-IT')}
+function populateSeasonSelect(select,selectedId,{includeEmpty=false}={}){
+  if(!select)return;select.replaceChildren();
+  if(includeEmpty)select.append(new Option('Nessuna — stagione vuota',''));
+  seasons.forEach(s=>select.append(new Option(`${s.name}${s.is_current?' — ATTUALE':''}`,s.id)));
+  if(selectedId&&seasons.some(s=>s.id===selectedId))select.value=selectedId;
+}
+function suggestNextSeason(){
+  if($('newSeasonName')?.value)return;
+  const base=seasons[0]?.name||currentSeason()?.name;
+  const match=base?.match(/^(\d{4})\/(\d{4})$/);if(!match)return;
+  const start=Number(match[1])+1,end=Number(match[2])+1;
+  $('newSeasonName').value=`${start}/${end}`;$('newSeasonStart').value=`${start}-07-01`;$('newSeasonEnd').value=`${end}-06-30`;
+}
+function renderSeasons(){
+  const box=$('seasonsList');if(!box)return;box.replaceChildren();
+  seasons.forEach(s=>{
+    const row=document.createElement('article');row.className='season-row';
+    const title=document.createElement('div');const strong=document.createElement('strong');strong.textContent=s.name;const small=document.createElement('small');small.textContent=`${formatShortDate(s.start_date)} – ${formatShortDate(s.end_date)}`;const count=document.createElement('small');count.className='season-roster-count';count.textContent=`Rosa: ${s.roster_count||0} atleti (${s.active_count||0} attivi)`;title.append(strong,small,count);
+    const badges=document.createElement('div');badges.className='season-badges';
+    if(s.is_current){const badge=document.createElement('span');badge.className='season-badge current';badge.textContent='Stagione attuale';badges.append(badge)}
+    if(!s.is_current){const badge=document.createElement('span');badge.className='season-badge future';badge.textContent='Preparazione';badges.append(badge)}
+    const actions=document.createElement('div');actions.className='actions';
+    const open=document.createElement('button');open.type='button';open.className='secondary';open.textContent='Apri rosa';open.onclick=async()=>{selectedAthleteSeasonId=s.id;populateSeasonSelect($('athleteSeasonSelect'),s.id);await loadAthletes();openAdminTab('athletes')};actions.append(open);
+    if(!s.roster_count&&s.id!==currentSeason()?.id){const copy=document.createElement('button');copy.type='button';copy.className='secondary';copy.textContent='Copia rosa attuale';copy.onclick=async()=>{const source=currentSeason();if(!source||!confirm(`Copiare gli atleti attivi di ${source.name} nella rosa ${s.name}?`))return;const {data,error}=await db.rpc('v2_copy_season_roster',{p_source_season_id:source.id,p_target_season_id:s.id});if(error)return toast('Errore copia rosa: '+error.message);await loadSeasons(s.id);toast(`Copiati ${data||0} atleti nella stagione ${s.name}`)};actions.append(copy)}
+    if(!s.is_current){const current=document.createElement('button');current.type='button';current.className='secondary';current.textContent='Imposta attuale';current.onclick=async()=>{if(!confirm(`Impostare ${s.name} come stagione attuale?`))return;const {error}=await db.rpc('v2_set_current_season',{p_season_id:s.id});if(error)return toast(error.message);await loadSeasons();await loadAthletes();toast('Stagione attuale aggiornata')};actions.append(current)}
+    const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='Modifica';edit.onclick=()=>openSeasonEditor(s);actions.append(edit);
+    if(!s.is_current){const remove=document.createElement('button');remove.type='button';remove.className='danger';remove.textContent='Elimina';remove.onclick=async()=>{if(!confirm(`Eliminare definitivamente la stagione ${s.name} e la sua rosa?\n\nL'operazione è consentita solo se non ci sono gare collegate.`))return;const {error}=await db.rpc('v2_delete_season',{p_season_id:s.id});if(error)return toast(seasonErrorMessage(error));if(selectedAthleteSeasonId===s.id)selectedAthleteSeasonId='';await loadSeasons();await loadAthletes();toast(`Stagione ${s.name} eliminata`)};actions.append(remove)}
+    row.append(title,badges,actions);box.append(row);
+  });
+}
+function seasonErrorMessage(error){
+  const message=error?.message||String(error||'Errore sconosciuto');
+  if(message.includes('CURRENT_SEASON_CANNOT_BE_DELETED'))return'La stagione attuale non può essere eliminata. Imposta prima un’altra stagione come attuale.';
+  if(message.includes('SEASON_HAS_EVENTS'))return'Questa stagione contiene già delle gare e non può essere eliminata.';
+  if(message.includes('SEASON_NAME_ALREADY_EXISTS'))return'Esiste già una stagione con questo nome.';
+  return message;
+}
+function openSeasonEditor(season){
+  $('editSeasonId').value=season.id;$('editSeasonName').value=season.name;$('editSeasonStart').value=season.start_date;$('editSeasonEnd').value=season.end_date;
+  $('seasonEditCard').classList.remove('hidden');$('seasonEditCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('cancelSeasonEditBtn').onclick=()=>{$('seasonEditCard').classList.add('hidden');$('editSeasonId').value=''};
+$('editSeasonName').addEventListener('input',()=>{const m=$('editSeasonName').value.trim().match(/^(\d{4})\/(\d{4})$/);if(m){$('editSeasonStart').value=`${m[1]}-07-01`;$('editSeasonEnd').value=`${m[2]}-06-30`}});
+$('saveSeasonBtn').onclick=async()=>{
+  const args={p_season_id:$('editSeasonId').value,p_name:$('editSeasonName').value.trim(),p_start_date:$('editSeasonStart').value||null,p_end_date:$('editSeasonEnd').value||null};
+  if(!args.p_season_id||!/^\d{4}\/\d{4}$/.test(args.p_name)||!args.p_start_date||!args.p_end_date)return toast('Inserisci nome e date validi');
+  const {error}=await db.rpc('v2_update_season',args);if(error)return toast('Errore modifica stagione: '+seasonErrorMessage(error));
+  $('seasonEditCard').classList.add('hidden');$('editSeasonId').value='';await loadSeasons(args.p_season_id);toast('Parametri della stagione aggiornati');
+};
+async function loadSeasons(preferredId=selectedAthleteSeasonId){
+  const {data,error}=await db.from('v2_seasons').select('*').order('start_date',{ascending:false});if(error)return toast('Errore stagioni: '+error.message);
+  const {data:rosterRows,error:rosterError}=await db.from('v2_season_athletes').select('season_id,is_active');if(rosterError)return toast('Errore conteggio rose: '+rosterError.message);
+  const counts=new Map();(rosterRows||[]).forEach(row=>{const c=counts.get(row.season_id)||{total:0,active:0};c.total++;if(row.is_active)c.active++;counts.set(row.season_id,c)});
+  seasons=(data||[]).map(s=>({...s,roster_count:counts.get(s.id)?.total||0,active_count:counts.get(s.id)?.active||0}));selectedAthleteSeasonId=seasons.some(s=>s.id===preferredId)?preferredId:(currentSeason()?.id||seasons[0]?.id||'');
+  populateSeasonSelect($('eventSeasonInput'),currentEvent?.season_id||currentSeason()?.id);
+  populateSeasonSelect($('athleteSeasonSelect'),selectedAthleteSeasonId);
+  populateSeasonSelect($('newSeasonCopyFrom'),currentSeason()?.id,{includeEmpty:true});
+  renderSeasons();suggestNextSeason();
+}
+$('athleteSeasonSelect').onchange=async()=>{selectedAthleteSeasonId=$('athleteSeasonSelect').value;await loadAthletes()};
+$('eventSeasonInput').onchange=()=>document.dispatchEvent(new CustomEvent('juvenilia:event-season-changed',{detail:{seasonId:$('eventSeasonInput').value}}));
+$('newSeasonName').addEventListener('input',()=>{const m=$('newSeasonName').value.trim().match(/^(\d{4})\/(\d{4})$/);if(m){$('newSeasonStart').value=`${m[1]}-07-01`;$('newSeasonEnd').value=`${m[2]}-06-30`}});
+$('createSeasonBtn').onclick=async()=>{
+  const args={p_name:$('newSeasonName').value.trim(),p_start_date:$('newSeasonStart').value||null,p_end_date:$('newSeasonEnd').value||null,p_copy_from:$('newSeasonCopyFrom').value||null};
+  if(!/^\d{4}\/\d{4}$/.test(args.p_name)||!args.p_start_date||!args.p_end_date)return toast('Inserisci nome e date della stagione');
+  const {data,error}=await db.rpc('v2_create_season',args);if(error)return toast('Errore creazione stagione: '+error.message);
+  $('newSeasonName').value='';await loadSeasons(data);selectedAthleteSeasonId=data;populateSeasonSelect($('athleteSeasonSelect'),data);await loadAthletes();toast('Nuova stagione creata');
+};
 const linkedEventSelectIds=['eventSelect','registrationsEventSelect','configEventSelect','advancedEventSelect','exportEventSelect'];
 
 function populateLinkedEventSelects(selectedId=currentEvent?.id||''){
@@ -171,7 +244,8 @@ function populateLinkedEventSelects(selectedId=currentEvent?.id||''){
     events.forEach(e=>{
       const o=document.createElement('option');
       o.value=e.id;
-      o.textContent=e.title+(e.is_archived?' — ARCHIVIATA':'');
+      const season=seasons.find(s=>s.id===e.season_id)?.name||'';
+      o.textContent=e.title+(season?` — ${season}`:'')+(e.is_archived?' — ARCHIVIATA':'');
       sel.append(o);
     });
     if(selectedId&&events.some(e=>e.id===selectedId))sel.value=selectedId;
@@ -210,7 +284,7 @@ $('eventSelect').onchange=async()=>selectAdminEvent($('eventSelect').value);
   const sel=$(id);
   if(sel)sel.onchange=async()=>selectAdminEvent(sel.value);
 });
-function fillEvent(){const e=currentEvent||{};$('eventTitleInput').value=e.title||'';$('eventSlugInput').value=e.slug||'';$('eventDescriptionInput').value=e.description||'';$('eventDeadlineInput').value=localDate(e.registration_deadline);$('eventPublishedInput').checked=!!e.is_published;$('eventArchivedInput').checked=!!e.is_archived;renderAdminPoster()}
+function fillEvent(){const e=currentEvent||{};$('eventTitleInput').value=e.title||'';$('eventSlugInput').value=e.slug||'';$('eventDescriptionInput').value=e.description||'';$('eventDeadlineInput').value=localDate(e.registration_deadline);$('eventPublishedInput').checked=!!e.is_published;$('eventArchivedInput').checked=!!e.is_archived;populateSeasonSelect($('eventSeasonInput'),e.season_id||currentSeason()?.id);$('eventSeasonInput').disabled=!!currentEvent;renderAdminPoster()}
 function updatePublicEventLink(){
   let link=$('openPublicEventLink');
   let directBtn=$('copyDirectEventLink');
@@ -248,6 +322,7 @@ function updatePublicEventLink(){
 $('newEventBtn').onclick=()=>{
   currentEvent=null;
   fillEvent();
+  $('eventSeasonInput').disabled=false;
   updatePublicEventLink();
   $('eventSlugInput').dataset.auto='1';
   $('saveEventBtn').textContent='Crea gara';
@@ -298,7 +373,8 @@ $('saveEventBtn').onclick=async()=>{
   const title=$('eventTitleInput').value.trim();
   const finalSlug=slugify($('eventSlugInput').value || title);
   $('eventSlugInput').value=finalSlug;
-  const row={title:title,slug:finalSlug,description:$('eventDescriptionInput').value.trim()||null,registration_deadline:$('eventDeadlineInput').value?new Date($('eventDeadlineInput').value).toISOString():null,is_published:$('eventPublishedInput').checked,is_archived:$('eventArchivedInput').checked};if(!row.title)return toast('Il titolo della gara è obbligatorio');
+  const row={title:title,slug:finalSlug,season_id:$('eventSeasonInput').value||currentSeason()?.id||null,description:$('eventDescriptionInput').value.trim()||null,registration_deadline:$('eventDeadlineInput').value?new Date($('eventDeadlineInput').value).toISOString():null,is_published:$('eventPublishedInput').checked,is_archived:$('eventArchivedInput').checked};if(!row.title)return toast('Il titolo della gara è obbligatorio');
+  if(!row.season_id)return toast('Seleziona la stagione della gara');
   if(!row.slug)return toast('Lo slug non è valido. Usa lettere, numeri e trattini.');const creating=!currentEvent;
   const q=creating
     ? db.from('v2_events').insert(row).select().single()
@@ -309,8 +385,9 @@ $('saveEventBtn').onclick=async()=>{
 
   if(creating && saved?.id){
     const {data:activeAthletes,error:athletesError}=await db
-      .from('v2_athletes')
-      .select('id')
+      .from('v2_season_athletes')
+      .select('athlete_id,category')
+      .eq('season_id',saved.season_id)
       .eq('is_active',true);
 
     if(athletesError){
@@ -318,7 +395,8 @@ $('saveEventBtn').onclick=async()=>{
     }else if(activeAthletes?.length){
       const rows=activeAthletes.map(a=>({
         event_id:saved.id,
-        athlete_id:a.id,
+        athlete_id:a.athlete_id,
+        category_snapshot:a.category,
         status:'pending'
       }));
 
@@ -347,9 +425,23 @@ $('saveEventBtn').onclick=async()=>{
   await Promise.all([loadAthletes(),loadRegistrations(),loadTimers(),loadConfig()]);
   renderStats()};
 
-async function loadAthletes(){const {data,error}=await db.from('v2_athletes').select('*').order('full_name');if(error)return toast(error.message);athletes=data||[];renderAthletes()}
+async function loadAthletes(){
+  const season=selectedAthleteSeason();
+  if(!season){athletes=[];renderAthletes();return}
+  selectedAthleteSeasonId=season.id;populateSeasonSelect($('athleteSeasonSelect'),season.id);
+  const {data,error}=await db.from('v2_season_athletes').select('id,season_id,athlete_id,category,is_active').eq('season_id',season.id);
+  if(error)return toast(error.message);
+  const roster=data||[],ids=roster.map(row=>row.athlete_id);let profiles=[];
+  if(ids.length){const {data:profileData,error:profileError}=await db.from('v2_athletes').select('id,full_name,gender').in('id',ids);if(profileError)return toast('Errore anagrafica atleti: '+profileError.message);profiles=profileData||[]}
+  const byId=new Map(profiles.map(a=>[a.id,a]));
+  athletes=roster.map(row=>{const athlete=byId.get(row.athlete_id);return{season_athlete_id:row.id,season_id:row.season_id,id:row.athlete_id,full_name:athlete?.full_name||'Atleta non disponibile',gender:athlete?.gender||null,category:row.category,is_active:row.is_active}}).sort((a,b)=>a.full_name.localeCompare(b.full_name,'it'));
+  const state=$('athleteSeasonState');state.textContent=`${season.is_current?'Stagione attuale':'In preparazione'} · ${athletes.length} atleti`;state.className=`season-state ${season.is_current?'current':'future'}`;
+  $('addAthleteBtn').disabled=false;$('athleteName').disabled=false;$('athleteCategory').disabled=false;$('athleteGender').disabled=false;
+  renderAthletes();
+}
 function renderAthletes(){
   $('athletesBody').replaceChildren();
+  if(!athletes.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=5;td.className='empty-state';td.textContent='Nessun atleta in questa rosa. Puoi aggiungerli qui oppure usare “Copia rosa attuale” nella scheda Stagioni.';tr.append(td);$('athletesBody').append(tr);return}
   const categories=allAthleteCategories();
   athletes.forEach(a=>{
     const tr=document.createElement('tr');
@@ -368,9 +460,9 @@ function renderAthletes(){
       const category=clean(catSelect.value).toUpperCase();
       if(!category)return toast('Seleziona una categoria');
       if(category===a.category)return toast('Categoria già impostata');
-      const {error}=await db.from('v2_athletes').update({category}).eq('id',a.id);
+      const {data:updated,error}=await db.rpc('v2_update_season_athlete_category',{p_season_id:a.season_id,p_athlete_id:a.id,p_category:category});
       if(error)return toast('Errore modifica categoria: '+error.message);
-      toast(`Categoria di ${a.full_name} aggiornata`);
+      toast(`Categoria di ${a.full_name} aggiornata${updated?` anche in ${updated} iscrizioni ancora in attesa`:''}`);
       await loadAthletes();await loadRegistrations();
       document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
     };
@@ -378,30 +470,36 @@ function renderAthletes(){
     const toggle=document.createElement('button');toggle.textContent=a.is_active?'Disattiva':'Riattiva';toggle.className=a.is_active?'danger':'';
     toggle.onclick=async()=>{
       const becomingActive=!a.is_active;
-      const {error}=await db.from('v2_athletes').update({is_active:becomingActive}).eq('id',a.id);
+      const {data:n,error}=await db.rpc('v2_set_season_athlete_active',{p_season_id:a.season_id,p_athlete_id:a.id,p_active:becomingActive});
       if(error)return toast(error.message);
       if(becomingActive){
-        const {data:n,error:syncError}=await db.rpc('v2_sync_active_athlete_to_events',{p_athlete_id:a.id});
-        if(syncError)return toast('Atleta riattivato, ma sincronizzazione gare non riuscita: '+syncError.message);
         toast(`Atleta riattivato: aggiunto a ${n||0} gare attive`);
-      }
+      }else toast(`Atleta disattivato per ${selectedAthleteSeason()?.name}${n?`: rimosso da ${n} gare ancora in attesa`:''}`);
       await loadAthletes();await loadRegistrations();
       document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
     };
 
-    const del=document.createElement('button');del.textContent='Elimina atleta';del.className='danger';
-    del.onclick=async()=>{
-      if(!confirm(`Eliminare definitivamente "${a.full_name}"?\n\nVerranno eliminate anche tutte le sue iscrizioni collegate alle gare.`))return;
-      if(!confirm(`ULTIMA CONFERMA\n\nSei sicuro di voler eliminare definitivamente "${a.full_name}"?\n\nQuesta operazione non può essere annullata.`))return;
-      const {error}=await db.from('v2_athletes').delete().eq('id',a.id);
-      if(error)return toast('Errore eliminazione atleta: '+error.message);
-      toast('Atleta eliminato definitivamente');await loadAthletes();await loadRegistrations();renderStats();
-      document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
-    };
-    td.append(saveCategory,toggle,del);tr.append(td);$('athletesBody').append(tr);
+    td.append(saveCategory,toggle);tr.append(td);$('athletesBody').append(tr);
   });
 }
-$('addAthleteBtn').onclick=async()=>{const row={full_name:$('athleteName').value.trim().toUpperCase(),category:$('athleteCategory').value.trim().toUpperCase(),gender:$('athleteGender').value||null};if(!row.full_name||!row.category)return toast('Nome e categoria obbligatori');const {error}=await db.from('v2_athletes').insert(row);if(error)return toast(error.message);$('athleteName').value='';toast('Atleta aggiunto');await loadAthletes()};
+$('addAthleteBtn').onclick=async()=>{
+  const season=selectedAthleteSeason(),fullName=$('athleteName').value.trim().toUpperCase(),category=$('athleteCategory').value.trim().toUpperCase(),gender=$('athleteGender').value||null;
+  if(!season)return toast('Seleziona una stagione');if(!fullName||!category)return toast('Nome e categoria obbligatori');
+  let athleteId=null;
+  const {data:matches,error:searchError}=await db.from('v2_athletes').select('id,full_name,gender').eq('full_name',fullName);
+  if(searchError)return toast(searchError.message);
+  const same=(matches||[]).find(a=>a.full_name.trim().toUpperCase()===fullName&&(a.gender||null)===gender);
+  if(same)athleteId=same.id;
+  else{
+    const {data:created,error}=await db.from('v2_athletes').insert({full_name:fullName,category,gender,is_active:season.is_current}).select('id').single();
+    if(error)return toast(error.message);athleteId=created.id;
+  }
+  const {error}=await db.from('v2_season_athletes').insert({season_id:season.id,athlete_id:athleteId,category,is_active:true});
+  if(error)return toast(error.code==='23505'?'Atleta già presente in questa stagione':error.message);
+  const {data:added,error:syncError}=await db.rpc('v2_sync_season_athlete_to_events',{p_season_id:season.id,p_athlete_id:athleteId});
+  if(syncError)return toast('Atleta aggiunto, ma sincronizzazione gare non riuscita: '+syncError.message);
+  $('athleteName').value='';toast(`${same?'Atleta aggiunto alla stagione':'Nuovo atleta aggiunto'}${added?` e inserito in ${added} gare`:''}`);await loadAthletes();
+};
 
 async function loadRegistrations(){
   if(!currentEvent){registrations=[];selectedRegistrationIds.clear();renderRegistrations();return}
@@ -429,7 +527,7 @@ function renderRegistrations(){
     const checkTd=document.createElement('td'),cb=document.createElement('input');cb.type='checkbox';cb.className='registration-select';cb.checked=selectedRegistrationIds.has(r.id);
     cb.onchange=()=>{if(cb.checked)selectedRegistrationIds.add(r.id);else selectedRegistrationIds.delete(r.id);refreshSelectAllRegistrationState()};checkTd.append(cb);tr.append(checkTd);
     const statusLabel=r.status==='no'&&r.auto_declined_at?'Non partecipa · Nessuna risposta':r.status;
-    [r.athlete?.full_name||'',r.category_override||r.athlete?.category||'',statusLabel,r.companion_name||'',r.is_locked?'Sì':'No'].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});
+    [r.athlete?.full_name||'',r.category_override||r.category_snapshot||r.athlete?.category||'',statusLabel,r.companion_name||'',r.is_locked?'Sì':'No'].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});
     const td=document.createElement('td');td.className='row-actions';
     const lock=document.createElement('button');lock.textContent=r.is_locked?'Sblocca':'Blocca';lock.onclick=async()=>{const {error}=await db.from('v2_event_registrations').update({is_locked:!r.is_locked}).eq('id',r.id);if(error)return toast(error.message);await loadRegistrations()};
     const reset=document.createElement('button');reset.textContent='Reset';reset.className='secondary';reset.onclick=async()=>{const {error}=await db.from('v2_event_registrations').update({status:'pending',companion_name:null,responded_at:null,race_day:null,category_override:null}).eq('id',r.id);if(error)return toast(error.message);await loadRegistrations()};
@@ -449,7 +547,13 @@ async function setSelectedLock(value){
 }
 $('lockSelectedBtn').onclick=()=>setSelectedLock(true);
 $('unlockSelectedBtn').onclick=()=>setSelectedLock(false);
-$('enrollAllBtn').onclick=async()=>{if(!currentEvent)return toast('Seleziona una gara');const existing=new Set(registrations.map(r=>r.athlete_id)),rows=athletes.filter(a=>a.is_active&&!existing.has(a.id)).map(a=>({event_id:currentEvent.id,athlete_id:a.id}));if(!rows.length)return toast('Tutti gli atleti attivi sono già presenti');const {error}=await db.from('v2_event_registrations').insert(rows);if(error)return toast(error.message);toast(`${rows.length} atleti aggiunti`);await loadRegistrations()};
+$('enrollAllBtn').onclick=async()=>{
+  if(!currentEvent)return toast('Seleziona una gara');
+  const {data:roster,error:rosterError}=await db.from('v2_season_athletes').select('athlete_id,category').eq('season_id',currentEvent.season_id).eq('is_active',true);
+  if(rosterError)return toast(rosterError.message);
+  const existing=new Set(registrations.map(r=>r.athlete_id)),rows=(roster||[]).filter(a=>!existing.has(a.athlete_id)).map(a=>({event_id:currentEvent.id,athlete_id:a.athlete_id,category_snapshot:a.category}));
+  if(!rows.length)return toast('Tutti gli atleti attivi della stagione sono già presenti');const {error}=await db.from('v2_event_registrations').insert(rows);if(error)return toast(error.message);toast(`${rows.length} atleti aggiunti`);await loadRegistrations()
+};
 $('resetRegistrationsBtn').onclick=async()=>{if(!currentEvent||!confirm('Resettare tutte le scelte, accompagnatori, giornate e categorie specifiche della gara?'))return;const {error}=await db.from('v2_event_registrations').update({status:'pending',companion_name:null,responded_at:null,race_day:null,category_override:null}).eq('event_id',currentEvent.id);if(error)return toast(error.message);await loadRegistrations();toast('Scelte resettate')};
 $('unlockAllBtn').onclick=async()=>{if(!currentEvent)return;const {error}=await db.from('v2_event_registrations').update({is_locked:false}).eq('event_id',currentEvent.id);if(error)return toast(error.message);await loadRegistrations();toast('Tutti sbloccati')};
 
@@ -499,7 +603,7 @@ $('saveConfigBtn').onclick=async()=>{
   if(error)return toast(error.message);toast('Configurazione pubblica salvata');await loadConfig();
 };
 
-function categoryOf(r){return r.category_override||r.athlete?.category||''}
+function categoryOf(r){return r.category_override||r.category_snapshot||r.athlete?.category||''}
 function costOf(r){const n=Number(cfg('category_costs',{})[categoryOf(r)]||0);return Number.isFinite(n)?n:0}
 function raceDayOf(r){return r.race_day||''}
 
@@ -652,10 +756,10 @@ let timerRows=[];
 async function fetchTimerSetupData(){
   const [{data:eventData,error:eventError},{data:categoryData,error:athleteError}] = await Promise.all([
     db.from('v2_events')
-      .select('id,title,is_published,is_archived,created_at')
+      .select('id,title,season_id,is_published,is_archived,created_at')
       .eq('is_archived',false)
       .order('created_at',{ascending:false}),
-    db.rpc('v2_admin_list_active_categories')
+    db.rpc('v2_admin_list_active_categories',{p_season_id:currentEvent?.season_id||currentSeason()?.id||null})
   ]);
   const athleteData = (categoryData || []).map(category => ({ category }));
 
@@ -700,7 +804,8 @@ function populateTimerEventSelect(){
   timerEvents.forEach(e=>{
     const o=document.createElement('option');
     o.value=e.id;
-    o.textContent=e.title+(e.is_published?'':' (non pubblicata)');
+    const season=seasons.find(s=>s.id===e.season_id)?.name||'';
+    o.textContent=e.title+(season?` — ${season}`:'')+(e.is_published?'':' (non pubblicata)');
     sel.append(o);
   });
 
@@ -776,6 +881,15 @@ async function loadTimersForSelectedEvent(){
 
   timerRows=data||[];
   renderSimpleTimersList();
+}
+
+async function loadTimerCategoriesForSelectedEvent(){
+  const event=timerEvents.find(e=>e.id===timerEventId);
+  if(!event)return;
+  const {data,error}=await db.rpc('v2_admin_list_active_categories',{p_season_id:event.season_id});
+  if(error)return toast('Errore caricamento categorie: '+error.message);
+  timerCategories=[...new Set((data||[]).map(x=>String(x).trim()).filter(Boolean))];
+  renderTimerCategoryChecks();
 }
 
 function renderSimpleTimersList(){
@@ -862,13 +976,14 @@ async function refreshTimerSetup(){
 
   await fetchTimerSetupData();
   populateTimerEventSelect();
-  renderTimerCategoryChecks();
+  await loadTimerCategoriesForSelectedEvent();
   await loadTimersForSelectedEvent();
 }
 
 $('timerEventSelect')?.addEventListener('change',async()=>{
   timerEventId=$('timerEventSelect').value||null;
   resetTimerForm();
+  await loadTimerCategoriesForSelectedEvent();
   await loadTimersForSelectedEvent();
 });
 

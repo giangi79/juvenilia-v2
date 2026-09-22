@@ -1,5 +1,5 @@
 /* Il titolo della gara deve essere un unico blocco di testo anche su Safari iOS. */
-#eventsList .event-card > h2:first-child {
+#eventsList .event-card > h2 {
   display: block;
   min-width: 0;
   max-width: 100%;
@@ -9,6 +9,22 @@
 }
 
 /* La barra sul bordo della scheda resta l'unico elemento decorativo. */
-#eventsList .event-card > h2:first-child::before {
+#eventsList .event-card > h2::before {
   content: none;
 }
+
+#eventsList .event-season-badge{
+  display:inline-flex;
+  margin-bottom:10px;
+  padding:5px 9px;
+  border:1px solid #68bce8;
+  border-radius:999px;
+  background:#173f5d;
+  color:#dff4ff;
+  font-size:.7rem;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+
+#eventsList .event-season-badge + h2::before{content:none}

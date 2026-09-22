@@ -1,0 +1,19 @@
+.field-help{display:block;margin-top:5px;color:#a9c3d8;font-size:.72rem;line-height:1.35}
+.seasons-heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.seasons-heading h2{margin-bottom:5px}
+.season-create-card{margin:18px 0;padding:18px;border:1px solid #355a78;border-radius:15px;background:#10283c}
+.season-create-card h3{margin-top:0;color:#fff}
+.seasons-list{display:grid;gap:11px}
+.season-row{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,1.3fr) auto;gap:14px;align-items:center;padding:15px;border:1px solid #355a78;border-radius:13px;background:#17354f}
+.season-row strong,.season-row span{display:block}.season-row small{color:#a9c3d8}
+.season-roster-count{margin-top:6px;color:#d8eaf7!important;font-weight:700}
+.season-badges{display:flex;gap:7px;flex-wrap:wrap}
+.season-badge,.season-state{display:inline-flex!important;align-items:center;width:max-content;padding:5px 9px;border-radius:999px;font-size:.72rem;font-weight:900;text-transform:uppercase}
+.season-badge.current,.season-state.current{background:#147653;color:#fff;border:1px solid #42c391}
+.season-badge.future,.season-state.future{background:#1a6090;color:#fff;border:1px solid #58b6e8}
+.season-badge.locked,.season-state.locked{background:#5b3b18;color:#ffe2a1;border:1px solid #a97835}
+.season-row .actions{justify-content:flex-end;margin:0}
+.season-row .actions button{white-space:nowrap}
+.athlete-season-picker{display:flex;align-items:end;justify-content:space-between;gap:14px;margin:14px 0;padding:14px;border:1px solid #355a78;border-radius:13px;background:#10283c}
+.athlete-season-picker label{min-width:min(100%,330px)}
+@media(max-width:760px){.season-row{grid-template-columns:1fr}.season-row .actions{justify-content:flex-start}.athlete-season-picker{display:grid;align-items:start}.season-create-card{padding:14px}}

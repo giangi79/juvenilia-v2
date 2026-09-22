@@ -111,7 +111,7 @@ function isCron(req){
 }
 
 function categoryOf(r){
-  return String(r.category_override||r.athlete?.category||'SENZA CATEGORIA').toUpperCase();
+  return String(r.category_override||r.category_snapshot||r.athlete?.category||'SENZA CATEGORIA').toUpperCase();
 }
 
 function categoryRank(cat){
@@ -129,7 +129,7 @@ async function buildSummary(eventId,categories=null,label=null){
 
   const {data:regs,error}=await admin
     .from('v2_event_registrations')
-    .select('status,companion_name,race_day,category_override,athlete:v2_athletes(full_name,category,gender)')
+    .select('status,companion_name,race_day,category_override,category_snapshot,athlete:v2_athletes(full_name,category,gender)')
     .eq('event_id',eventId);
   if(error)throw error;
 

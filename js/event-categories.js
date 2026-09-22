@@ -63,16 +63,18 @@ async function loadForEvent(){
 async function saveAndSync(eventId,allowed){
   const {error:cfgError}=await db.from('v2_event_config').upsert({event_id:eventId,key:'allowed_categories',value:allowed,is_public:false},{onConflict:'event_id,key'});
   if(cfgError)throw cfgError;
+  const {data:event,error:eventError}=await db.from('v2_events').select('season_id').eq('id',eventId).single();
+  if(eventError)throw eventError;
   const [{data:athletes,error:ae},{data:regs,error:re}]=await Promise.all([
-    db.from('v2_athletes').select('id,category').eq('is_active',true),
-    db.from('v2_event_registrations').select('id,athlete_id,category_override,athlete:v2_athletes(category)').eq('event_id',eventId)
+    db.from('v2_season_athletes').select('athlete_id,category').eq('season_id',event.season_id).eq('is_active',true),
+    db.from('v2_event_registrations').select('id,athlete_id,category_override,category_snapshot,athlete:v2_athletes(category)').eq('event_id',eventId)
   ]);
   if(ae)throw ae;if(re)throw re;
   const ok=new Set(allowed);
-  const remove=(regs||[]).filter(r=>!ok.has(clean(r.category_override||r.athlete?.category)));
+  const remove=(regs||[]).filter(r=>!ok.has(clean(r.category_override||r.category_snapshot||r.athlete?.category)));
   if(remove.length){const {error}=await db.from('v2_event_registrations').delete().in('id',remove.map(r=>r.id));if(error)throw error}
   const kept=new Set((regs||[]).filter(r=>!remove.some(x=>x.id===r.id)).map(r=>r.athlete_id));
-  const add=(athletes||[]).filter(a=>ok.has(clean(a.category))&&!kept.has(a.id)).map(a=>({event_id:eventId,athlete_id:a.id,status:'pending'}));
+  const add=(athletes||[]).filter(a=>ok.has(clean(a.category))&&!kept.has(a.athlete_id)).map(a=>({event_id:eventId,athlete_id:a.athlete_id,category_snapshot:a.category,status:'pending'}));
   if(add.length){const {error}=await db.from('v2_event_registrations').upsert(add,{onConflict:'event_id,athlete_id',ignoreDuplicates:true});if(error)throw error}
   loadedAllowed=[...allowed];
   return {added:add.length,removed:remove.length};
@@ -125,9 +127,9 @@ if(saveBtn){
       existingEventIds=new Set((data||[]).map(x=>x.id));
     }
     if(eventIdBefore&&removed.length&&!wasCreating){
-      const {data:regs,error}=await db.from('v2_event_registrations').select('status,category_override,athlete:v2_athletes(category)').eq('event_id',eventIdBefore);
+      const {data:regs,error}=await db.from('v2_event_registrations').select('status,category_override,category_snapshot,athlete:v2_athletes(category)').eq('event_id',eventIdBefore);
       if(error)return toast('Errore controllo categorie: '+error.message);
-      const affected=(regs||[]).filter(r=>removed.includes(clean(r.category_override||r.athlete?.category)));
+      const affected=(regs||[]).filter(r=>removed.includes(clean(r.category_override||r.category_snapshot||r.athlete?.category)));
       if(affected.length){
         const answered=affected.filter(r=>r.status!=='pending').length;
         if(!confirm(`Stai disabilitando: ${removed.join(', ')}.\n\nSaranno rimosse ${affected.length} iscrizioni${answered?`, di cui ${answered} con risposta già registrata`:''}.\n\nContinuare?`))return;

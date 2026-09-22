@@ -1,0 +1,73 @@
+JUVENILIA V2 - PROVA GESTIONE STAGIONI
+=======================================
+
+Questa versione NON è stata caricata su GitHub.
+
+1. PREPARAZIONE SUPABASE
+------------------------
+Apri Supabase > SQL Editor e avvia UNA SOLA VOLTA il file:
+
+supabase/sql/49_gestione_stagioni_sportive.sql
+
+Subito dopo avvia anche:
+
+supabase/sql/50_migliorie_gestione_stagioni.sql
+
+Se avevi già eseguito il file 49 con il pacchetto precedente, esegui soltanto
+il file 50.
+
+Al termine deve comparire una riga con:
+- stagioni_correnti = 1
+- gare_senza_stagione = 0
+- iscrizioni_senza_categoria = 0
+
+La migrazione non elimina dati. Le gare e gli atleti esistenti vengono associati
+automaticamente alla stagione 2025/2026. Il sito già pubblicato continua a
+funzionare, ma durante la prova è consigliato fare tutte le modifiche agli
+atleti dal pannello locale di questo pacchetto.
+
+2. AVVIO SUL PC
+---------------
+Non aprire admin.html con un doppio clic: i moduli JavaScript richiedono un
+piccolo server locale.
+
+Metodo più semplice:
+- fai doppio clic su AVVIA_TEST_STAGIONI.bat;
+- il browser aprirà http://localhost:8000/admin.html;
+- lascia aperta la finestra nera durante la prova.
+
+In alternativa usa Live Server di Visual Studio Code.
+
+3. PROVA CONSIGLIATA
+--------------------
+1) Accedi all'area Admin.
+2) Apri la nuova scheda "Stagioni".
+3) Crea 2026/2027 copiando la rosa da 2025/2026. Se esiste già ma è vuota,
+   usa il pulsante "Copia rosa attuale".
+4) Apri "Atleti" e seleziona 2026/2027.
+5) Cambia la categoria di un atleta, disattivane uno e aggiungine uno nuovo.
+6) Crea una nuova gara e scegli 2026/2027 nel campo "Stagione della gara".
+7) Lascia la gara NON pubblicata durante le prime prove.
+8) Controlla che le vecchie gare 2025/2026 mantengano categorie e iscrizioni.
+
+COME FUNZIONA
+-------------
+- L'identità dell'atleta è unica.
+- Categoria e presenza sono specifiche di ogni stagione.
+- Ogni gara appartiene a una stagione.
+- La categoria viene copiata nell'iscrizione alla gara, quindi le gare vecchie
+  non cambiano quando l'atleta passa di categoria.
+- Dalla scheda Stagioni puoi aprire la rosa, modificare nome e date o eliminare
+  una stagione senza gare. La stagione attuale non può essere eliminata.
+- Impostare una nuova stagione come "attuale" aggiorna anche la compatibilità
+  con le funzioni precedenti del progetto.
+
+NOTA TELEGRAM
+-------------
+Il pacchetto contiene anche l'Edge Function Telegram aggiornata per usare la
+categoria della stagione. Per una prova completa dei messaggi automatici sarà
+necessario distribuire nuovamente la funzione telegram-dispatch; per testare
+stagioni, atleti, gare e pagina pubblica non è necessario farlo subito.
+
+Se la prova è positiva, la versione potrà essere pubblicata su GitHub e la
+funzione Telegram potrà essere aggiornata nello stesso passaggio.
