@@ -1,11 +1,13 @@
 JUVENILIA V2 - PROVA GESTIONE STAGIONI
 =======================================
 
-Questa versione NON è stata caricata su GitHub.
+Questa versione è pubblicata su GitHub e attiva sul progetto Supabase.
 
-1. PREPARAZIONE SUPABASE
-------------------------
-Apri Supabase > SQL Editor e avvia UNA SOLA VOLTA il file:
+1. PREPARAZIONE DI UN NUOVO DATABASE SUPABASE
+---------------------------------------------
+Sul database Juvenilia attuale queste migrazioni sono già state applicate.
+Solo per una nuova installazione, apri Supabase > SQL Editor e avvia UNA SOLA
+VOLTA il file:
 
 supabase/sql/49_gestione_stagioni_sportive.sql
 
@@ -22,9 +24,7 @@ Al termine deve comparire una riga con:
 - iscrizioni_senza_categoria = 0
 
 La migrazione non elimina dati. Le gare e gli atleti esistenti vengono associati
-automaticamente alla stagione 2025/2026. Il sito già pubblicato continua a
-funzionare, ma durante la prova è consigliato fare tutte le modifiche agli
-atleti dal pannello locale di questo pacchetto.
+automaticamente alla stagione 2025/2026.
 
 2. AVVIO SUL PC
 ---------------
@@ -64,10 +64,5 @@ COME FUNZIONA
 
 NOTA TELEGRAM
 -------------
-Il pacchetto contiene anche l'Edge Function Telegram aggiornata per usare la
-categoria della stagione. Per una prova completa dei messaggi automatici sarà
-necessario distribuire nuovamente la funzione telegram-dispatch; per testare
-stagioni, atleti, gare e pagina pubblica non è necessario farlo subito.
-
-Se la prova è positiva, la versione potrà essere pubblicata su GitHub e la
-funzione Telegram potrà essere aggiornata nello stesso passaggio.
+L'Edge Function telegram-dispatch è già stata aggiornata per usare la categoria
+salvata nella stagione della gara.
