@@ -7,7 +7,12 @@ const cfg=(k,d=null)=>cfgRows.find(x=>x.key===k)?.value??d;
 const CATEGORY_ORDER=['GIOVANISSIMI','ESORDIENTI','R12','RAGAZZI','ALLIEVI','JUNIOR','SENIOR'];
 
 async function loadAdvanced(){
-  if(!eventId()) return;
+  if(!eventId()){
+    costs={};regs=[];cfgRows=[];
+    $('advDayA').value='';$('advDayB').value='';$('advDayC').value='';
+    $('advPayHolder').value='';$('advPayIban').value='';$('advPayReason').value='';$('advPayEmail').value='';
+    $('advShowCosts').checked=false;renderCosts();renderRegs();return;
+  }
   const [c,r]=await Promise.all([
     db.from('v2_event_config').select('*').eq('event_id',eventId()),
     db.from('v2_event_registrations').select('*, athlete:v2_athletes(*)').eq('event_id',eventId())
@@ -22,7 +27,7 @@ async function loadAdvanced(){
 function renderCosts(){
   const b=$('advCosts');b.replaceChildren();CATEGORY_ORDER.forEach(cat=>{const item=document.createElement('label');item.className='fixed-cost-item';const title=document.createElement('span');title.textContent=cat;const inp=document.createElement('input');inp.type='number';inp.min='0';inp.step='.50';inp.inputMode='decimal';inp.placeholder='0';inp.value=Number(costs[cat]||0)||'';inp.setAttribute('aria-label',`Quota ${cat}`);inp.oninput=()=>{const value=Number(inp.value||0);if(value>0)costs[cat]=value;else delete costs[cat]};item.append(title,inp);b.append(item)})
 }
-$('advSaveConfigBtn').onclick=async()=>{const days=[$('advDayA').value.trim(),$('advDayB').value.trim(),$('advDayC').value.trim()].filter(Boolean),pay={holder:$('advPayHolder').value.trim(),iban:$('advPayIban').value.trim().toUpperCase(),reason:$('advPayReason').value.trim(),email:$('advPayEmail').value.trim()};const rows=[{event_id:eventId(),key:'event_days',value:days,is_public:true},{event_id:eventId(),key:'category_costs',value:costs,is_public:true},{event_id:eventId(),key:'show_category_costs',value:$('advShowCosts').checked,is_public:true},{event_id:eventId(),key:'payment_info',value:pay,is_public:false}];const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});if(error)return toast(error.message);toast('Dettagli gara salvati');await loadAdvanced()};
+$('advSaveConfigBtn').onclick=async()=>{const selectedId=eventId();if(!selectedId)return toast('Seleziona una gara');const days=[$('advDayA').value.trim(),$('advDayB').value.trim(),$('advDayC').value.trim()].filter(Boolean),pay={holder:$('advPayHolder').value.trim(),iban:$('advPayIban').value.trim().toUpperCase(),reason:$('advPayReason').value.trim(),email:$('advPayEmail').value.trim()};const rows=[{event_id:selectedId,key:'event_days',value:days,is_public:true},{event_id:selectedId,key:'category_costs',value:costs,is_public:true},{event_id:selectedId,key:'show_category_costs',value:$('advShowCosts').checked,is_public:true},{event_id:selectedId,key:'payment_info',value:pay,is_public:false}];const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});if(error)return toast(error.message);toast('Dettagli gara salvati');await loadAdvanced()};
 $('advClearDaysBtn').onclick=()=>{$('advDayA').value='';$('advDayB').value='';$('advDayC').value='';toast('Giornate azzerate: premi Salva per confermare')};
 $('advClearCostsBtn').onclick=()=>{if(!confirm('Azzera tutte le quote della gara?'))return;costs={};renderCosts();toast('Quote azzerate: premi Salva per confermare')};
 $('advClearPaymentBtn').onclick=()=>{if(!confirm('Azzera tutti i dati di pagamento?'))return;$('advPayHolder').value='';$('advPayIban').value='';$('advPayReason').value='';$('advPayEmail').value='';toast('Pagamento azzerato: premi Salva per confermare')};

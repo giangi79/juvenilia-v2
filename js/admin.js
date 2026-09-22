@@ -241,6 +241,7 @@ function populateLinkedEventSelects(selectedId=currentEvent?.id||''){
     const sel=$(id);
     if(!sel)return;
     sel.replaceChildren();
+    sel.append(new Option(events.length?'Seleziona una gara':'Nessuna gara disponibile',''));
     events.forEach(e=>{
       const o=document.createElement('option');
       o.value=e.id;
@@ -248,16 +249,29 @@ function populateLinkedEventSelects(selectedId=currentEvent?.id||''){
       o.textContent=e.title+(season?` — ${season}`:'')+(e.is_archived?' — ARCHIVIATA':'');
       sel.append(o);
     });
-    if(selectedId&&events.some(e=>e.id===selectedId))sel.value=selectedId;
+    sel.value=selectedId&&events.some(e=>e.id===selectedId)?selectedId:'';
   });
 }
 
 async function selectAdminEvent(eventId,{reload=true}={}){
   const found=events.find(e=>e.id===eventId);
-  if(!found)return;
+  if(!found){
+    currentEvent=null;
+    populateLinkedEventSelects('');
+    $('saveEventBtn').textContent='Salva modifiche';
+    $('saveEventBtn').disabled=true;
+    $('deleteEventBtn').disabled=true;
+    fillEvent();
+    updatePublicEventLink();
+    if(reload){await Promise.all([loadRegistrations(),loadTimers(),loadConfig()]);renderStats()}
+    document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId:null}}));
+    return;
+  }
   currentEvent=found;
   populateLinkedEventSelects(found.id);
   $('saveEventBtn').textContent='Salva modifiche';
+  $('saveEventBtn').disabled=false;
+  $('deleteEventBtn').disabled=false;
   $('eventSlugInput').dataset.auto='0';
   fillEvent();
   updatePublicEventLink();
@@ -272,9 +286,12 @@ async function loadEvents(preferredId=currentEvent?.id||''){
   const {data,error}=await db.from('v2_events').select('*').order('created_at',{ascending:false});
   if(error)return toast(error.message);
   events=data||[];
-  const selected=events.find(e=>e.id===preferredId)||events[0]||null;
+  const selected=events.find(e=>e.id===preferredId)||null;
   currentEvent=selected;
   populateLinkedEventSelects(selected?.id||'');
+  $('saveEventBtn').textContent='Salva modifiche';
+  $('saveEventBtn').disabled=!selected;
+  $('deleteEventBtn').disabled=!selected;
   fillEvent();
   updatePublicEventLink();
 }
@@ -321,11 +338,14 @@ function updatePublicEventLink(){
 
 $('newEventBtn').onclick=()=>{
   currentEvent=null;
+  populateLinkedEventSelects('');
   fillEvent();
   $('eventSeasonInput').disabled=false;
   updatePublicEventLink();
   $('eventSlugInput').dataset.auto='1';
   $('saveEventBtn').textContent='Crea gara';
+  $('saveEventBtn').disabled=false;
+  $('deleteEventBtn').disabled=true;
   $('eventTitleInput').focus();
   toast('Nuova gara: inserisci il titolo e compila i dati');
 };
@@ -414,7 +434,7 @@ $('saveEventBtn').onclick=async()=>{
     }
   }
 
-  await loadEvents();
+  await loadEvents(saved?.id||'');
   if(saved){
     currentEvent=events.find(e=>e.id===saved.id)||saved;
     $('eventSelect').value=saved.id;
@@ -789,7 +809,7 @@ function populateTimerEventSelect(){
   const sel=$('timerEventSelect');
   if(!sel)return;
 
-  const previous=timerEventId||sel.value||currentEvent?.id||'';
+  const previous=timerEventId||sel.value||'';
   sel.replaceChildren();
 
   if(!timerEvents.length){
@@ -800,6 +820,8 @@ function populateTimerEventSelect(){
     timerEventId=null;
     return;
   }
+
+  sel.append(new Option('Seleziona una gara',''));
 
   timerEvents.forEach(e=>{
     const o=document.createElement('option');
@@ -812,7 +834,7 @@ function populateTimerEventSelect(){
   if(previous && timerEvents.some(e=>e.id===previous)){
     sel.value=previous;
   }else{
-    sel.selectedIndex=0;
+    sel.value='';
   }
 
   timerEventId=sel.value||null;
@@ -885,7 +907,7 @@ async function loadTimersForSelectedEvent(){
 
 async function loadTimerCategoriesForSelectedEvent(){
   const event=timerEvents.find(e=>e.id===timerEventId);
-  if(!event)return;
+  if(!event){timerCategories=[];renderTimerCategoryChecks();return}
   const {data,error}=await db.rpc('v2_admin_list_active_categories',{p_season_id:event.season_id});
   if(error)return toast('Errore caricamento categorie: '+error.message);
   timerCategories=[...new Set((data||[]).map(x=>String(x).trim()).filter(Boolean))];

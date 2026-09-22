@@ -7,7 +7,12 @@ const cfg=(k,d=null)=>cfgRows.find(x=>x.key===k)?.value??d;
 const CATEGORY_ORDER=['GIOVANISSIMI','ESORDIENTI','R12','RAGAZZI','ALLIEVI','JUNIOR','SENIOR'];
 
 async function loadAdvanced(){
-  if(!eventId()) return;
+  if(!eventId()){
+    costs={};regs=[];cfgRows=[];
+    $('advDayA').value='';$('advDayB').value='';$('advDayC').value='';
+    $('advPayHolder').value='';$('advPayIban').value='';$('advPayReason').value='';$('advPayEmail').value='';
+    $('advShowCosts').checked=false;renderCosts();renderRegs();return;
+  }
   const [c,r]=await Promise.all([
     db.from('v2_event_config').select('*').eq('event_id',eventId()),
     db.from('v2_event_registrations').select('*, athlete:v2_athletes(*)').eq('event_id',eventId())
@@ -47,7 +52,7 @@ function renderCosts(){
     b.append(item);
   });
 }
-$('advSaveConfigBtn').onclick=async()=>{const days=[$('advDayA').value.trim(),$('advDayB').value.trim(),$('advDayC').value.trim()].filter(Boolean),pay={holder:$('advPayHolder').value.trim(),iban:$('advPayIban').value.trim().toUpperCase(),reason:$('advPayReason').value.trim(),email:$('advPayEmail').value.trim()};const rows=[['event_days',days],['category_costs',costs],['show_category_costs',$('advShowCosts').checked],['payment_info',pay]].map(([key,value])=>({event_id:eventId(),key,value,is_public:true}));const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});if(error)return toast(error.message);toast('Dettagli gara salvati');await loadAdvanced()};
+$('advSaveConfigBtn').onclick=async()=>{const selectedId=eventId();if(!selectedId)return toast('Seleziona una gara');const days=[$('advDayA').value.trim(),$('advDayB').value.trim(),$('advDayC').value.trim()].filter(Boolean),pay={holder:$('advPayHolder').value.trim(),iban:$('advPayIban').value.trim().toUpperCase(),reason:$('advPayReason').value.trim(),email:$('advPayEmail').value.trim()};const rows=[['event_days',days],['category_costs',costs],['show_category_costs',$('advShowCosts').checked],['payment_info',pay]].map(([key,value])=>({event_id:selectedId,key,value,is_public:true}));const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});if(error)return toast(error.message);toast('Dettagli gara salvati');await loadAdvanced()};
 $('advClearDaysBtn').onclick=()=>{$('advDayA').value='';$('advDayB').value='';$('advDayC').value='';toast('Giornate azzerate: premi Salva per confermare')};
 $('advClearCostsBtn').onclick=()=>{if(!confirm('Azzera tutte le quote della gara?'))return;costs={};renderCosts();toast('Quote azzerate: premi Salva per confermare')};
 $('advClearPaymentBtn').onclick=()=>{if(!confirm('Azzera tutti i dati di pagamento?'))return;$('advPayHolder').value='';$('advPayIban').value='';$('advPayReason').value='';$('advPayEmail').value='';toast('Pagamento azzerato: premi Salva per confermare')};

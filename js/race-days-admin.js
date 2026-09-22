@@ -22,7 +22,7 @@ function renderTable(){
   [...($('registrationsBody')?.rows||[])].forEach(tr=>{tr.querySelector('.race-days-cell')?.remove();const r=regs.find(x=>String(x.id)===tr.dataset.registrationId);const td=document.createElement('td');td.className='race-days-cell';td.dataset.label='Giorni';td.append(badges(r?.race_days||[]));tr.children[2]?.insertAdjacentElement('afterend',td)});
 }
 async function load(force=false){
-  ensureUI();const id=$('eventSelect')?.value;if(!id)return;if(loading)return;if(!force&&id===loadedEventId){renderTable();return}
+  ensureUI();const id=$('eventSelect')?.value;if(!id){days=[];regs=[];loadedEventId=null;renderChecks([]);renderTable();return}if(loading)return;if(!force&&id===loadedEventId){renderTable();return}
   const {data:{session}}=await db.auth.getSession();if(!session)return;loading=true;
   try{const [c,r]=await Promise.all([db.from('v2_event_config').select('key,value').eq('event_id',id).eq('key','athlete_weekdays'),db.from('v2_event_registrations').select('id,race_days,athlete:v2_athletes(full_name)').eq('event_id',id)]);if(c.error||r.error)return;days=Array.isArray(c.data?.[0]?.value)?c.data[0].value:[];regs=r.data||[];loadedEventId=id;renderChecks(days);renderTable()}finally{loading=false}
 }

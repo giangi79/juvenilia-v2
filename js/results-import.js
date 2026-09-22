@@ -25,7 +25,13 @@ async function refreshPanel(){
   $('resultsImportPreview')?.classList.add('hidden');
   $('savedResultsPanel')?.classList.add('hidden');
   $('saveAnalyzedResultsBtn')?.classList.add('hidden');
-  if(!id)return;
+  if(!id){
+    if($('eventResultsUrl'))$('eventResultsUrl').value='';
+    if($('resultsSavedState'))$('resultsSavedState').textContent='Seleziona una gara';
+    if($('resultsImportStatus'))$('resultsImportStatus').textContent='';
+    $('showSavedResultsBtn')?.classList.add('hidden');
+    return;
+  }
   const [{data:event},{data:savedRows}]=await Promise.all([
     db.from('v2_events').select('results_url').eq('id',id).maybeSingle(),
     db.from('v2_event_results').select('page_title').eq('event_id',id)
