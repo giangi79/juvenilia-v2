@@ -499,7 +499,20 @@ function renderAthletes(){
       document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
     };
 
-    td.append(toggle);tr.append(td);$('athletesBody').append(tr);
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Elimina atleta';remove.className='danger';
+    remove.onclick=async()=>{
+      if(!confirm(`Eliminare definitivamente "${a.full_name}"?\n\nL'atleta verrà rimosso da tutte le stagioni. Verranno eliminate anche tutte le sue iscrizioni e i risultati nello storico.`))return;
+      if(!confirm(`ULTIMA CONFERMA\n\nEliminare definitivamente "${a.full_name}" e i suoi dati collegati? Questa operazione non può essere annullata.`))return;
+      remove.disabled=true;
+      const {error}=await db.rpc('v2_delete_athlete',{p_athlete_id:a.id});
+      if(error){remove.disabled=false;return toast('Errore eliminazione atleta: '+error.message)}
+      toast('Atleta eliminato definitivamente');
+      await Promise.all([loadAthletes(),loadRegistrations(),loadSeasons()]);
+      renderStats();
+      document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
+    };
+
+    td.append(toggle,remove);tr.append(td);$('athletesBody').append(tr);
   });
 }
 $('addAthleteBtn').onclick=async()=>{
