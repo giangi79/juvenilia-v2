@@ -1,0 +1,20 @@
+.whatsapp-contacts-card{margin:22px 0;padding:18px;border:1px solid #355a78;border-radius:16px;background:#17354f}
+.whatsapp-contacts-card{color:#eef6fb}
+.whatsapp-contacts-card .muted{color:#bed3e3}
+.whatsapp-contacts-card h3{margin:0 0 8px}
+.whatsapp-contacts-card>p{margin:0 0 18px}
+.whatsapp-recipient{display:block;max-width:540px;margin:12px 0 18px}
+.whatsapp-recipient select{width:100%;margin-top:8px}
+.whatsapp-address-book{margin-top:18px;padding-top:15px;border-top:1px solid #355a78}
+.whatsapp-address-book summary{cursor:pointer;font-weight:800}
+.whatsapp-contact-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:14px 0}
+.whatsapp-contact-form label{flex:1 1 210px;min-width:0}
+.whatsapp-contact-form input{width:100%;margin-top:6px}
+.whatsapp-contact-form button{min-height:43px}
+.whatsapp-contacts-list{display:grid;gap:8px;margin-top:12px}
+.whatsapp-contact-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid #355a78;border-radius:10px;background:#10283c}
+.whatsapp-contact-row strong,.whatsapp-contact-row small{display:block}
+.whatsapp-contact-row small{margin-top:3px;color:#b6cfe0}
+.whatsapp-contact-row .actions{margin:0;gap:7px}
+.whatsapp-contact-row button{min-height:38px}
+@media(max-width:600px){.whatsapp-contact-row{align-items:stretch;flex-direction:column}.whatsapp-contact-row .actions button{flex:1}.whatsapp-contact-form button{flex:1 1 130px}}

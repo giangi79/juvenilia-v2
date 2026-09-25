@@ -1,5 +1,5 @@
 import { db } from './supabase.js';
-import { WHATSAPP_NUMBER } from './config.js';
+import { getSelectedWhatsappContact } from './whatsapp-contacts.js?v=1';
 import { toast, formatDate } from './ui.js';
 
 let seasons=[],selectedAthleteSeasonId='',events=[],currentEvent=null,athletes=[],registrations=[],timers=[],configRows=[];
@@ -739,6 +739,8 @@ $('exportCompanionsBtn').onclick=()=>saveExcel(exportRows(true),`Accompagnatori_
 
 $('whatsappBtn').onclick=()=>{
   if(!currentEvent)return toast('Seleziona una gara');
+  const recipient=getSelectedWhatsappContact();
+  if(!recipient)return toast('Scegli un destinatario dalla rubrica WhatsApp');
   const yes=registrations.filter(r=>r.status==='yes');
   if(!yes.length)return toast('Nessun partecipante confermato');
 
@@ -777,7 +779,7 @@ $('whatsappBtn').onclick=()=>{
     ...(payment.length?['','*PAGAMENTO*',...payment]:[])
   ].join('\n');
 
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,'_blank','noopener');
+  window.open(`https://wa.me/${recipient.phone.slice(1)}?text=${encodeURIComponent(msg)}`,'_blank','noopener');
 };
 
 db.auth.onAuthStateChange(()=>{});
