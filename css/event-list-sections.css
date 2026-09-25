@@ -1,0 +1,5 @@
+#eventsList.event-list{display:block}
+#eventsList .event-list-section{margin-bottom:28px}
+#eventsList .event-list-section-title{margin:0 0 14px;color:#f5f9fc;font-size:1.3rem}
+#eventsList .event-list-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:850px){#eventsList .event-list-grid{grid-template-columns:1fr}}

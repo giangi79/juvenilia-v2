@@ -27,7 +27,40 @@ function goTop(){window.scrollTo({top:0,left:0,behavior:'auto'});document.docume
 function showHistoryButton(show){document.getElementById('openPublicHistory')?.classList.toggle('hidden',!show)}
 async function init(){initVisualControls();if(selectedSlug){await loadEvent(selectedSlug);goTop()}else{await loadEvents();goTop()}}
 async function loadEvents(){const {data,error}=await db.rpc('v2_list_public_events');if(error){showFatal(error.message);return}renderEventList(data||[])}
-function renderEventList(events){posterRequest++;renderPublicPoster(null);const list=document.getElementById('eventsList');list.replaceChildren();document.getElementById('eventView').classList.add('hidden');list.classList.remove('hidden');showHistoryButton(true);document.getElementById('eventTitle').textContent='Gare Juvenilia';document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';stopHeroCountdown();events.forEach(e=>{const card=document.createElement('article');card.className='event-card card';if(e.season_name){const season=document.createElement('span');season.className='event-season-badge';season.textContent=`Stagione ${e.season_name}`;card.append(season)}const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';const meta=document.createElement('div');meta.className='event-meta';meta.textContent=e.registration_deadline?`Scadenza iscrizioni: ${formatDate(e.registration_deadline)}`:'';const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);card.append(h,meta,b);list.append(card)});goTop()}
+function renderEventList(events){
+  posterRequest++;renderPublicPoster(null);
+  const list=document.getElementById('eventsList');list.replaceChildren();
+  document.getElementById('eventView').classList.add('hidden');list.classList.remove('hidden');
+  showHistoryButton(true);
+  document.getElementById('eventTitle').textContent='Gare Juvenilia';
+  document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';
+  stopHeroCountdown();
+  const now=Date.now();
+  const open=[],expired=[];
+  events.forEach(event=>{
+    const deadline=event.registration_deadline?Date.parse(event.registration_deadline):NaN;
+    (Number.isFinite(deadline)&&deadline<=now?expired:open).push(event);
+  });
+  const addSection=(title,items,isExpired)=>{
+    if(!items.length)return;
+    const section=document.createElement('section');section.className='event-list-section';
+    const heading=document.createElement('h2');heading.className='event-list-section-title';heading.textContent=title;
+    const grid=document.createElement('div');grid.className='event-list-grid';
+    items.forEach(e=>{
+      const card=document.createElement('article');card.className='event-card card';
+      if(e.season_name){const season=document.createElement('span');season.className='event-season-badge';season.textContent=`Stagione ${e.season_name}`;card.append(season)}
+      const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';
+      const meta=document.createElement('div');meta.className='event-meta';
+      meta.textContent=e.registration_deadline?`${isExpired?'Iscrizioni scadute':'Scadenza iscrizioni'}: ${formatDate(e.registration_deadline)}`:'';
+      const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);
+      card.append(h,meta,b);grid.append(card);
+    });
+    section.append(heading,grid);list.append(section);
+  };
+  addSection('Gare in programma',open,false);
+  addSection('Gare con iscrizioni scadute',expired,true);
+  goTop();
+}
 function openEvent(slug){selectedSlug=slug;directEventMode=false;history.pushState({},'',`?gara=${encodeURIComponent(slug)}`);goTop();loadEvent(slug).then(goTop)}
 async function loadEvent(slug){const request=++posterRequest;renderPublicPoster(null);const {data,error}=await db.rpc('v2_get_public_event',{p_slug:slug});if(request!==posterRequest)return;if(error){showFatal(error.message);return}payload=data;if(!payload){showFatal('Gara non trovata.');return}renderEvent(payload);const poster=await db.rpc('v2_get_public_poster_path',{p_slug:slug});if(request===posterRequest&&!poster.error)renderPublicPoster(poster.data)}
 function ensureBackButton(){let back=document.getElementById('backEventsBtn');if(!back){back=document.createElement('button');back.id='backEventsBtn';back.className='back-events';back.type='button';back.innerHTML='<i class="fas fa-arrow-left" aria-hidden="true"></i> Tutte le gare';back.onclick=()=>{history.pushState({},'',location.pathname);selectedSlug=null;directEventMode=false;payload=null;loadEvents().then?.(goTop);goTop()}}return back}
