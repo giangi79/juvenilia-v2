@@ -2,4 +2,7 @@
 #eventsList .event-list-section{margin-bottom:28px}
 #eventsList .event-list-section-title{margin:0 0 14px;color:#f5f9fc;font-size:1.3rem}
 #eventsList .event-list-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+#eventsList .event-expired-badge{display:inline-flex;align-items:center;margin:0 0 10px 8px;padding:5px 10px;border-radius:999px;background:#ffd7d7;color:#8d1722;border:2px solid #f07780;font-size:.75rem;font-weight:900;letter-spacing:.07em;line-height:1.1}
+#eventsList .event-expired-badge:first-child{margin-left:0}
+#eventsList .event-expired-badge + h2::before{content:none}
 @media(max-width:850px){#eventsList .event-list-grid{grid-template-columns:1fr}}

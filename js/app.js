@@ -49,6 +49,7 @@ function renderEventList(events){
     items.forEach(e=>{
       const card=document.createElement('article');card.className='event-card card';
       if(e.season_name){const season=document.createElement('span');season.className='event-season-badge';season.textContent=`Stagione ${e.season_name}`;card.append(season)}
+      if(isExpired){const badge=document.createElement('span');badge.className='event-expired-badge';badge.textContent='SCADUTO';card.append(badge)}
       const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';
       const meta=document.createElement('div');meta.className='event-meta';
       meta.textContent=e.registration_deadline?`${isExpired?'Iscrizioni scadute':'Scadenza iscrizioni'}: ${formatDate(e.registration_deadline)}`:'';
