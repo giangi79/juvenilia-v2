@@ -152,6 +152,18 @@ async function buildSummary(eventId,categories=null,label=null){
   const yes=rows.filter(r=>r.status==='yes');
   const no=rows.filter(r=>r.status==='no');
   const pending=rows.filter(r=>r.status==='pending');
+  const {data:costRow,error:costError}=await admin
+    .from('v2_event_config')
+    .select('value')
+    .eq('event_id',eventId)
+    .eq('key','category_costs')
+    .maybeSingle();
+  if(costError)throw costError;
+  const costs=costRow?.value&&typeof costRow.value==='object'&&!Array.isArray(costRow.value)?costRow.value:{};
+  const costOf=(r)=>{
+    const value=Number(costs[categoryOf(r)]||0);
+    return Number.isFinite(value)?value:0;
+  };
 
   const lines=[
     '🏁 <b>JUVENILIA · RIEPILOGO GARA</b>',
@@ -183,6 +195,7 @@ async function buildSummary(eventId,categories=null,label=null){
       }
       let name=`• ${escapeHtml(r.athlete?.full_name||'Atleta')}`;
       if(r.race_day)name+=` · ${escapeHtml(r.race_day)}`;
+      if(r.status==='yes')name+=` · ${costOf(r).toFixed(2)} €`;
       if(r.companion_name&&r.status==='yes')name+=` · acc. ${escapeHtml(r.companion_name)}`;
       lines.push(name);
     }
@@ -190,6 +203,7 @@ async function buildSummary(eventId,categories=null,label=null){
   };
 
   appendGroup('✅ <b>PARTECIPANO</b>',yes);
+  lines.push(`💰 <b>TOTALE DA PAGARE: ${yes.reduce((sum,r)=>sum+costOf(r),0).toFixed(2)} €</b>`,'');
   appendGroup('❌ <b>NON PARTECIPANO</b>',no);
   appendGroup('⏳ <b>DA DEFINIRE</b>',pending);
 
