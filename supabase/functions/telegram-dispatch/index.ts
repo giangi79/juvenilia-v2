@@ -192,6 +192,29 @@ async function buildSummary(eventId,categories=null,label=null){
   appendGroup('✅ <b>PARTECIPANO</b>',yes);
   appendGroup('❌ <b>NON PARTECIPANO</b>',no);
   appendGroup('⏳ <b>DA DEFINIRE</b>',pending);
+
+  const {data:paymentRow,error:paymentError}=await admin
+    .from('v2_event_config')
+    .select('value')
+    .eq('event_id',eventId)
+    .eq('key','payment_info')
+    .maybeSingle();
+  if(paymentError)throw paymentError;
+  const payment=paymentRow?.value;
+  const paymentLines=[];
+  if(typeof payment==='string'){
+    if(payment.trim())paymentLines.push(escapeHtml(payment.trim()));
+  }else if(payment&&typeof payment==='object'&&!Array.isArray(payment)){
+    for(const [title,value] of [
+      ['Intestatario',payment.holder],
+      ['IBAN',payment.iban],
+      ['Causale',payment.reason],
+      ['Email distinta',payment.email]
+    ]){
+      if(typeof value==='string'&&value.trim())paymentLines.push(`<b>${title}:</b> ${escapeHtml(value.trim())}`);
+    }
+  }
+  if(paymentLines.length)lines.push('💳 <b>DATI DI PAGAMENTO</b>',...paymentLines,'');
   return lines.join('\n').trim();
 }
 
