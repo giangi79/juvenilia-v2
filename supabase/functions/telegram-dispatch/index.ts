@@ -63,13 +63,16 @@ function chunks(text,max=3900){
 
 async function sendTelegram(text){
   assertTelegramConfig();
+  const {data:configuredChat,error:chatError}=await admin.rpc('v2_get_telegram_delivery_chat_id');
+  if(chatError)throw chatError;
+  const destination=configuredChat||CHAT_ID;
   let last=null;
   for(const part of chunks(text)){
     const res=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        chat_id:CHAT_ID,
+        chat_id:destination,
         text:part,
         parse_mode:'HTML',
         disable_web_page_preview:true

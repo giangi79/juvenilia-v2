@@ -23,9 +23,11 @@ const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'au
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{...cors,'Content-Type':'application/json'}});
 
 async function sendTelegram(message:string){
+  const {data:configuredChat,error:chatError}=await admin.rpc('v2_get_telegram_delivery_chat_id');
+  if(chatError)throw chatError;
   const response=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({chat_id:CHAT_ID,text:message,parse_mode:'HTML',disable_web_page_preview:true})
+    body:JSON.stringify({chat_id:configuredChat||CHAT_ID,text:message,parse_mode:'HTML',disable_web_page_preview:true})
   });
   const result=await response.json().catch(()=>({}));
   if(!response.ok||result?.ok===false)throw new Error(result?.description||`Telegram HTTP ${response.status}`);
@@ -56,6 +58,20 @@ Deno.serve(async req=>{
   }
   if(!CRON_SECRET||req.headers.get('x-cron-secret')!==CRON_SECRET)return json({error:'UNAUTHORIZED'},401);
   if(!BOT_TOKEN||!CHAT_ID)return json({error:'TELEGRAM_NOT_CONFIGURED'},500);
+
+  if(body?.action==='discover_channel'){
+    try{
+      const response=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&timeout=0`);
+      const result=await response.json();
+      if(!response.ok||result?.ok===false)return json({error:'TELEGRAM_UPDATES_UNAVAILABLE'},502);
+      const channels=new Map<string,{id:string,title:string}>();
+      for(const update of result.result||[]){
+        const chat=update.channel_post?.chat||update.edited_channel_post?.chat||update.my_chat_member?.chat;
+        if(chat?.type==='channel')channels.set(String(chat.id),{id:String(chat.id),title:String(chat.title||'Canale')});
+      }
+      return json({ok:true,channels:[...channels.values()]});
+    }catch{return json({error:'TELEGRAM_UPDATES_UNAVAILABLE'},502)}
+  }
 
   const {data:claim,error:claimError}=await admin.rpc('v2_claim_birthday_reminder');
   if(claimError)return json({error:'CLAIM_FAILED'},500);
