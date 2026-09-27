@@ -59,6 +59,13 @@ Deno.serve(async req=>{
   if(!CRON_SECRET||req.headers.get('x-cron-secret')!==CRON_SECRET)return json({error:'UNAUTHORIZED'},401);
   if(!BOT_TOKEN||!CHAT_ID)return json({error:'TELEGRAM_NOT_CONFIGURED'},500);
 
+  if(body?.action==='destination_test'){
+    try{
+      await sendTelegram('✅ <b>JUVENILIA · CANALE COLLEGATO</b>\n\nLe notifiche di iscrizioni e compleanni arriveranno qui. Questo è un messaggio di prova.');
+      return json({ok:true,sent:1});
+    }catch{return json({error:'TELEGRAM_SEND_FAILED'},502)}
+  }
+
   if(body?.action==='discover_channel'){
     try{
       const response=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?limit=100&timeout=0`);
