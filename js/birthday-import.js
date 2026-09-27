@@ -75,3 +75,15 @@ $('birthdayImportApply').addEventListener('click',async()=>{
   document.dispatchEvent(new CustomEvent('juvenilia:athletes-changed'));
   location.reload();
 });
+
+$('birthdayTestBtn').addEventListener('click',async()=>{
+  const button=$('birthdayTestBtn'),result=$('birthdayTestResult');
+  button.disabled=true;result.textContent='Invio del test in corso…';
+  try{
+    const {data,error}=await db.functions.invoke('birthday-reminder',{body:{action:'test'}});
+    if(error||data?.error)throw new Error(data?.error||error?.message||'Invio non riuscito');
+    result.textContent=data?.message||'Messaggio di prova inviato su Telegram.';
+    toast(result.textContent);
+  }catch(error){result.textContent=`Test non riuscito: ${error.message}`;toast(result.textContent)}
+  finally{button.disabled=false}
+});

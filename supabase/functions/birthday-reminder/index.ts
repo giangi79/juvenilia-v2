@@ -11,12 +11,49 @@ function secretKey(){
   try{const keys=JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')||'{}');return keys.default||Object.values(keys)[0]||''}
   catch{return ''}
 }
+function publicKey(){
+  const legacy=Deno.env.get('SUPABASE_ANON_KEY');
+  if(legacy)return legacy;
+  try{const keys=JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS')||'{}');return keys.default||Object.values(keys)[0]||''}
+  catch{return ''}
+}
 const admin=createClient(SUPABASE_URL,secretKey(),{auth:{persistSession:false,autoRefreshToken:false}});
 const escapeHtml=(value:string)=>value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});
+const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-cron-secret','Access-Control-Allow-Methods':'POST, OPTIONS'};
+const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers:{...cors,'Content-Type':'application/json'}});
+
+async function sendTelegram(message:string){
+  const response=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:CHAT_ID,text:message,parse_mode:'HTML',disable_web_page_preview:true})
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||result?.ok===false)throw new Error(result?.description||`Telegram HTTP ${response.status}`);
+}
+
+async function isAdmin(req:Request){
+  const header=req.headers.get('authorization')||'';
+  const token=header.startsWith('Bearer ')?header.slice(7):'';
+  if(!token||!publicKey())return false;
+  const client=createClient(SUPABASE_URL,publicKey(),{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data:{user},error}=await client.auth.getUser(token);
+  if(error||!user)return false;
+  const {data:row,error:adminError}=await admin.from('v2_admin_users').select('user_id').eq('user_id',user.id).maybeSingle();
+  return !adminError&&!!row;
+}
 
 Deno.serve(async req=>{
+  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
   if(req.method!=='POST')return json({error:'METHOD_NOT_ALLOWED'},405);
+  const body=await req.json().catch(()=>({}));
+  if(body?.action==='test'){
+    if(!await isAdmin(req))return json({error:'ADMIN_REQUIRED'},401);
+    if(!BOT_TOKEN||!CHAT_ID)return json({error:'TELEGRAM_NOT_CONFIGURED'},500);
+    try{
+      await sendTelegram('🎉 <b>JUVENILIA · TEST COMPLEANNI</b>\n\n🎂 ATLETA DI PROVA\n\nQuesto è un messaggio di prova. Nessun promemoria reale è stato segnato come inviato.');
+      return json({ok:true,message:'Messaggio di prova inviato su Telegram.'});
+    }catch{return json({error:'TELEGRAM_SEND_FAILED'},502)}
+  }
   if(!CRON_SECRET||req.headers.get('x-cron-secret')!==CRON_SECRET)return json({error:'UNAUTHORIZED'},401);
   if(!BOT_TOKEN||!CHAT_ID)return json({error:'TELEGRAM_NOT_CONFIGURED'},500);
 
@@ -37,12 +74,7 @@ Deno.serve(async req=>{
   ].join('\n');
 
   try{
-    const response=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({chat_id:CHAT_ID,text:message,parse_mode:'HTML',disable_web_page_preview:true})
-    });
-    const result=await response.json().catch(()=>({}));
-    if(!response.ok||result?.ok===false)throw new Error(result?.description||`Telegram HTTP ${response.status}`);
+    await sendTelegram(message);
     const {error:finishError}=await admin.rpc('v2_finish_birthday_reminder',{p_day:day,p_error:null});
     if(finishError)throw finishError;
     return json({ok:true,sent:1,count:names.length});
