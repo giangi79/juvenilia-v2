@@ -1,0 +1,8 @@
+.birthday-import{margin-top:24px;padding:18px;background:#eaf4fa;color:#183c57}
+.birthday-import h3{margin:0 0 6px}
+.birthday-import p{margin:0 0 12px}
+.birthday-import input[type=file]{max-width:100%;margin-bottom:12px}
+.birthday-import .table-wrap{max-height:340px;overflow:auto;margin:12px 0}
+.birthday-import .import-ok{color:#166339;font-weight:800}
+.birthday-import .import-skip{color:#9b3030;font-weight:800}
+.athlete-birth-input{min-width:145px;max-width:175px}

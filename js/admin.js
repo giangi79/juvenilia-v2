@@ -452,16 +452,16 @@ async function loadAthletes(){
   const {data,error}=await db.from('v2_season_athletes').select('id,season_id,athlete_id,category,is_active').eq('season_id',season.id);
   if(error)return toast(error.message);
   const roster=data||[],ids=roster.map(row=>row.athlete_id);let profiles=[];
-  if(ids.length){const {data:profileData,error:profileError}=await db.from('v2_athletes').select('id,full_name,gender').in('id',ids);if(profileError)return toast('Errore anagrafica atleti: '+profileError.message);profiles=profileData||[]}
+  if(ids.length){const {data:profileData,error:profileError}=await db.from('v2_athletes').select('id,full_name,gender,birth_date').in('id',ids);if(profileError)return toast('Errore anagrafica atleti: '+profileError.message);profiles=profileData||[]}
   const byId=new Map(profiles.map(a=>[a.id,a]));
-  athletes=roster.map(row=>{const athlete=byId.get(row.athlete_id);return{season_athlete_id:row.id,season_id:row.season_id,id:row.athlete_id,full_name:athlete?.full_name||'Atleta non disponibile',gender:athlete?.gender||null,category:row.category,is_active:row.is_active}}).sort((a,b)=>a.full_name.localeCompare(b.full_name,'it'));
+  athletes=roster.map(row=>{const athlete=byId.get(row.athlete_id);return{season_athlete_id:row.id,season_id:row.season_id,id:row.athlete_id,full_name:athlete?.full_name||'Atleta non disponibile',gender:athlete?.gender||null,birth_date:athlete?.birth_date||null,category:row.category,is_active:row.is_active}}).sort((a,b)=>a.full_name.localeCompare(b.full_name,'it'));
   const state=$('athleteSeasonState');state.textContent=`${season.is_current?'Stagione attuale':'In preparazione'} · ${athletes.length} atleti`;state.className=`season-state ${season.is_current?'current':'future'}`;
   $('addAthleteBtn').disabled=false;$('athleteName').disabled=false;$('athleteCategory').disabled=false;$('athleteGender').disabled=false;
   renderAthletes();
 }
 function renderAthletes(){
   $('athletesBody').replaceChildren();
-  if(!athletes.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=5;td.className='empty-state';td.textContent='Nessun atleta in questa rosa. Puoi aggiungerli qui oppure usare “Copia rosa attuale” nella scheda Stagioni.';tr.append(td);$('athletesBody').append(tr);return}
+  if(!athletes.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='empty-state';td.textContent='Nessun atleta in questa rosa. Puoi aggiungerli qui oppure usare “Copia rosa attuale” nella scheda Stagioni.';tr.append(td);$('athletesBody').append(tr);return}
   const categories=allAthleteCategories();
   athletes.forEach(a=>{
     const tr=document.createElement('tr');
@@ -472,7 +472,11 @@ function renderAthletes(){
     [...new Set([a.category,...categories].filter(Boolean))].forEach(cat=>{const o=document.createElement('option');o.value=cat;o.textContent=cat;catSelect.append(o)});
     catSelect.value=a.category||'';catTd.append(catSelect);tr.append(catTd);
 
-    [a.gender||'-',a.is_active?'Sì':'No'].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});
+    const genderTd=document.createElement('td');genderTd.textContent=a.gender||'-';tr.append(genderTd);
+    const birthTd=document.createElement('td');const birthInput=document.createElement('input');birthInput.type='date';birthInput.className='athlete-birth-input';birthInput.value=a.birth_date||'';birthInput.setAttribute('aria-label',`Data di nascita di ${a.full_name}`);
+    birthInput.onchange=async()=>{const next=birthInput.value||null;birthInput.disabled=true;const {error}=await db.from('v2_athletes').update({birth_date:next}).eq('id',a.id);birthInput.disabled=false;if(error){birthInput.value=a.birth_date||'';return toast('Errore data di nascita: '+error.message)}a.birth_date=next;toast(`Compleanno di ${a.full_name} aggiornato`)};
+    birthTd.append(birthInput);tr.append(birthTd);
+    const activeTd=document.createElement('td');activeTd.textContent=a.is_active?'Sì':'No';tr.append(activeTd);
     const td=document.createElement('td');td.className='athlete-actions-cell';
 
     catSelect.onchange=async()=>{
@@ -516,22 +520,22 @@ function renderAthletes(){
   });
 }
 $('addAthleteBtn').onclick=async()=>{
-  const season=selectedAthleteSeason(),fullName=$('athleteName').value.trim().toUpperCase(),category=$('athleteCategory').value.trim().toUpperCase(),gender=$('athleteGender').value||null;
+  const season=selectedAthleteSeason(),fullName=$('athleteName').value.trim().toUpperCase(),category=$('athleteCategory').value.trim().toUpperCase(),gender=$('athleteGender').value||null,birthDate=$('athleteBirthDate').value||null;
   if(!season)return toast('Seleziona una stagione');if(!fullName||!category)return toast('Nome e categoria obbligatori');
   let athleteId=null;
-  const {data:matches,error:searchError}=await db.from('v2_athletes').select('id,full_name,gender').eq('full_name',fullName);
+  const {data:matches,error:searchError}=await db.from('v2_athletes').select('id,full_name,gender,birth_date').eq('full_name',fullName);
   if(searchError)return toast(searchError.message);
   const same=(matches||[]).find(a=>a.full_name.trim().toUpperCase()===fullName&&(a.gender||null)===gender);
-  if(same)athleteId=same.id;
+  if(same){if(birthDate&&same.birth_date&&same.birth_date!==birthDate)return toast('Data di nascita diversa da quella già presente: verifica l’atleta');athleteId=same.id;if(birthDate&&!same.birth_date){const {error}=await db.from('v2_athletes').update({birth_date:birthDate}).eq('id',athleteId);if(error)return toast('Errore compleanno: '+error.message)}}
   else{
-    const {data:created,error}=await db.from('v2_athletes').insert({full_name:fullName,category,gender,is_active:season.is_current}).select('id').single();
+    const {data:created,error}=await db.from('v2_athletes').insert({full_name:fullName,category,gender,birth_date:birthDate,is_active:season.is_current}).select('id').single();
     if(error)return toast(error.message);athleteId=created.id;
   }
   const {error}=await db.from('v2_season_athletes').insert({season_id:season.id,athlete_id:athleteId,category,is_active:true});
   if(error)return toast(error.code==='23505'?'Atleta già presente in questa stagione':error.message);
   const {data:added,error:syncError}=await db.rpc('v2_sync_season_athlete_to_events',{p_season_id:season.id,p_athlete_id:athleteId});
   if(syncError)return toast('Atleta aggiunto, ma sincronizzazione gare non riuscita: '+syncError.message);
-  $('athleteName').value='';toast(`${same?'Atleta aggiunto alla stagione':'Nuovo atleta aggiunto'}${added?` e inserito in ${added} gare`:''}`);await loadAthletes();
+  $('athleteName').value='';$('athleteBirthDate').value='';toast(`${same?'Atleta aggiunto alla stagione':'Nuovo atleta aggiunto'}${added?` e inserito in ${added} gare`:''}`);await loadAthletes();
 };
 
 async function loadRegistrations(){
