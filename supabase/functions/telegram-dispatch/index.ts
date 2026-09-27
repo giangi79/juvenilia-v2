@@ -203,7 +203,6 @@ async function buildSummary(eventId,categories=null,label=null){
   };
 
   appendGroup('✅ <b>PARTECIPANO</b>',yes);
-  lines.push(`💰 <b>TOTALE DA PAGARE: ${yes.reduce((sum,r)=>sum+costOf(r),0).toFixed(2)} €</b>`,'');
   appendGroup('❌ <b>NON PARTECIPANO</b>',no);
   appendGroup('⏳ <b>DA DEFINIRE</b>',pending);
 
@@ -228,7 +227,7 @@ async function buildSummary(eventId,categories=null,label=null){
       if(typeof value==='string'&&value.trim())paymentLines.push(`<b>${title}:</b> ${escapeHtml(value.trim())}`);
     }
   }
-  if(paymentLines.length)lines.push('💳 <b>DATI DI PAGAMENTO</b>',...paymentLines,'');
+  lines.push('💳 <b>DATI DI PAGAMENTO</b>',...paymentLines,`<b>TOTALE DA PAGARE: ${yes.reduce((sum,r)=>sum+costOf(r),0).toFixed(2)} €</b>`,'');
   return lines.join('\n').trim();
 }
 
