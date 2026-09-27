@@ -1,0 +1,28 @@
+.birthday-calendar-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px}
+.birthday-calendar-head h2{margin:0 0 5px}.birthday-calendar-head p{margin:0}
+.birthday-calendar-controls{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.birthday-calendar-controls label{font-weight:700;min-width:210px}
+.birthday-calendar-controls select{margin-top:6px}
+.birthday-calendar-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.birthday-calendar-stat{padding:14px;border:1px solid #cfe0ee;border-radius:14px;background:linear-gradient(145deg,#f8fbff,#edf6fd)}
+.birthday-calendar-stat strong{display:block;color:#173b68;font-size:1.7rem;line-height:1}
+.birthday-calendar-stat span{display:block;color:#536272;font-size:.84rem;font-weight:700;margin-top:7px}
+.birthday-calendar-table table{min-width:680px}
+.birthday-calendar-table tbody tr.birthday-soon td{background:#fff8e6}
+.birthday-distance{font-weight:800}
+.birthday-distance.birthday-now{color:#b42318}
+.birthday-distance.birthday-week{color:#a15c00}
+.birthday-distance.birthday-later{color:#245a96}
+@media(max-width:700px){
+  .birthday-calendar-head{align-items:stretch;flex-direction:column}
+  .birthday-calendar-controls{display:grid;grid-template-columns:1fr}
+  .birthday-calendar-controls label{min-width:0}
+  .birthday-calendar-stats{grid-template-columns:1fr}
+  .birthday-calendar-table{overflow:visible}
+  .birthday-calendar-table table{min-width:0}
+  .birthday-calendar-table thead{display:none}
+  .birthday-calendar-table tbody,.birthday-calendar-table tr,.birthday-calendar-table td{display:block;width:100%}
+  .birthday-calendar-table tr{border:1px solid #dbe4ec;border-radius:14px;margin:10px 0;padding:10px;background:#fff}
+  .birthday-calendar-table td{border:0;padding:5px 8px}
+  .birthday-calendar-table td:nth-child(2){font-size:1.05rem;font-weight:800;color:#173b68}
+}
