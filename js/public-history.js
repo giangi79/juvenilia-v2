@@ -29,6 +29,93 @@ function renderSummary(){const s=historyData.summary||{},box=$('publicHistorySum
 
 function renderEvents(){const box=$('publicHistoryEvents'),q=$('publicHistoryEventSearch').value.trim().toLocaleLowerCase('it'),filter=$('publicHistoryEventFilter').value;box.replaceChildren();const rows=historyData.events.filter(e=>(!q||`${e.title} ${e.season_name||''} ${eventDays(e)}`.toLocaleLowerCase('it').includes(q))&&(filter==='all'||eventStatus(e).key===filter));if(!rows.length){box.innerHTML='<p class="card muted">Nessuna gara trovata.</p>';return}rows.forEach(e=>{const st=eventStatus(e),card=document.createElement('article');card.className='public-history-event card';const head=document.createElement('div');head.className='public-history-event-head';const title=document.createElement('div');const kicker=document.createElement('span');kicker.className=`history-status ${st.key}`;kicker.textContent=st.label;const h=document.createElement('h3');h.textContent=e.title;const days=document.createElement('p');days.innerHTML='<i class="fas fa-calendar-days" aria-hidden="true"></i> ';days.append(document.createTextNode(`${e.season_name?`Stagione ${e.season_name} · `:''}${eventDays(e)}`));title.append(kicker,h,days);const rate=document.createElement('div');rate.className='public-history-rate';rate.innerHTML=`<strong>${percentage(e.participation_rate)}</strong><span>partecipazione</span>`;head.append(title,rate);const stats=document.createElement('div');stats.className='public-history-event-stats';[['Confermati',e.yes_count,'yes'],['Non partecipano',e.no_count,'no'],['In attesa',e.pending_count,'pending'],['Totale',e.total_count,'total']].forEach(([label,value,kind])=>{const d=document.createElement('div');d.className=`history-mini-stat ${kind}`;const strong=document.createElement('strong');strong.textContent=value;const span=document.createElement('span');span.textContent=label;d.append(strong,span);stats.append(d)});card.append(head,stats);const athletes=Array.isArray(e.confirmed_athletes)?e.confirmed_athletes:[];const button=document.createElement('button');button.type='button';button.className='public-history-attendees-button';button.setAttribute('aria-expanded','false');button.innerHTML='<i class="fas fa-users" aria-hidden="true"></i> Vedi iscritti';const panel=document.createElement('div');panel.className='public-history-attendees hidden';if(athletes.length){const list=document.createElement('ul');athletes.forEach(a=>{const item=document.createElement('li');const name=document.createElement('strong');name.textContent=a.full_name;const category=document.createElement('span');category.textContent=a.category||'—';item.append(name,category);list.append(item)});panel.append(list)}else{const empty=document.createElement('p');empty.textContent='Nessun atleta confermato per questa gara.';panel.append(empty)}button.addEventListener('click',()=>{const open=panel.classList.toggle('hidden')===false;button.setAttribute('aria-expanded',String(open));button.innerHTML=`<i class="fas ${open?'fa-chevron-up':'fa-users'}" aria-hidden="true"></i> ${open?'Nascondi iscritti':'Vedi iscritti'}`});card.append(button,panel);box.append(card)})}
 
+function renderEventsWithResults(){
+  const box=$('publicHistoryEvents');
+  const q=$('publicHistoryEventSearch').value.trim().toLocaleLowerCase('it');
+  const filter=$('publicHistoryEventFilter').value;
+  const rows=historyData.events.filter(e=>
+    (!q||`${e.title} ${e.season_name||''} ${eventDays(e)}`.toLocaleLowerCase('it').includes(q))&&
+    (filter==='all'||eventStatus(e).key===filter)
+  );
+  box.replaceChildren();
+  if(!rows.length){box.innerHTML='<p class="card muted">Nessuna gara trovata.</p>';return}
+
+  rows.forEach(e=>{
+    const st=eventStatus(e),card=document.createElement('article');
+    card.className='public-history-event card';
+    const head=document.createElement('div');head.className='public-history-event-head';
+    const title=document.createElement('div');
+    const kicker=document.createElement('span');kicker.className=`history-status ${st.key}`;kicker.textContent=st.label;
+    const h=document.createElement('h3');h.textContent=e.title;
+    const days=document.createElement('p');days.innerHTML='<i class="fas fa-calendar-days" aria-hidden="true"></i> ';
+    days.append(document.createTextNode(`${e.season_name?`Stagione ${e.season_name} · `:''}${eventDays(e)}`));
+    title.append(kicker,h,days);
+    const rate=document.createElement('div');rate.className='public-history-rate';
+    rate.innerHTML=`<strong>${percentage(e.participation_rate)}</strong><span>partecipazione</span>`;
+    head.append(title,rate);
+
+    const stats=document.createElement('div');stats.className='public-history-event-stats';
+    [['Confermati',e.yes_count,'yes'],['Non partecipano',e.no_count,'no'],['In attesa',e.pending_count,'pending'],['Totale',e.total_count,'total']].forEach(([label,value,kind])=>{
+      const item=document.createElement('div');item.className=`history-mini-stat ${kind}`;
+      const strong=document.createElement('strong');strong.textContent=value;
+      const span=document.createElement('span');span.textContent=label;
+      item.append(strong,span);stats.append(item);
+    });
+    card.append(head,stats);
+
+    const athletes=Array.isArray(e.confirmed_athletes)?e.confirmed_athletes:[];
+    const button=document.createElement('button');button.type='button';button.className='public-history-attendees-button';
+    button.setAttribute('aria-expanded','false');
+    button.innerHTML='<i class="fas fa-users" aria-hidden="true"></i> Vedi iscritti';
+    const panel=document.createElement('div');panel.className='public-history-attendees hidden';
+    if(athletes.length){
+      const list=document.createElement('ul');
+      athletes.forEach(a=>{
+        const item=document.createElement('li');
+        const attendeeHead=document.createElement('div');attendeeHead.className='public-history-attendee-head';
+        const resultRows=historyResults.get(resultKey(a.full_name,e.title,e.season_name))||[];
+        let name;
+        if(resultRows.length){
+          name=document.createElement('button');name.type='button';name.className='public-history-attendee-name';
+          name.setAttribute('aria-expanded','false');
+          name.innerHTML='<i class="fas fa-ranking-star" aria-hidden="true"></i> ';
+          name.append(document.createTextNode(a.full_name));
+        }else{
+          name=document.createElement('strong');name.textContent=a.full_name;
+        }
+        const category=document.createElement('span');category.textContent=a.category||'—';
+        attendeeHead.append(name,category);item.append(attendeeHead);
+        if(resultRows.length){
+          const results=document.createElement('div');results.className='public-history-attendee-results hidden';
+          resultRows.forEach(row=>{
+            const result=document.createElement('div');result.className='public-athlete-result';
+            if(row.page_title){const page=document.createElement('small');page.textContent=row.page_title;result.append(page)}
+            const text=document.createElement('strong');text.textContent=publicResultText(row);
+            result.append(text);results.append(result);
+          });
+          name.addEventListener('click',event=>{
+            event.stopPropagation();
+            const open=results.classList.toggle('hidden')===false;
+            name.setAttribute('aria-expanded',String(open));
+            item.classList.toggle('has-open-results',open);
+          });
+          item.append(results);
+        }
+        list.append(item);
+      });
+      panel.append(list);
+    }else{
+      const empty=document.createElement('p');empty.textContent='Nessun atleta confermato per questa gara.';panel.append(empty);
+    }
+    button.addEventListener('click',()=>{
+      const open=panel.classList.toggle('hidden')===false;
+      button.setAttribute('aria-expanded',String(open));
+      button.innerHTML=`<i class="fas ${open?'fa-chevron-up':'fa-users'}" aria-hidden="true"></i> ${open?'Nascondi iscritti':'Vedi iscritti'}`;
+    });
+    card.append(button,panel);box.append(card);
+  });
+}
+
 function renderAthletes(){
   const body=$('publicHistoryAthletes'),q=$('publicHistoryAthleteSearch').value.trim().toLocaleLowerCase('it'),cat=$('publicHistoryAthleteCategory').value;
   body.replaceChildren();
@@ -65,7 +152,7 @@ function renderAthletes(){
 }
 
 function populateCategories(){const select=$('publicHistoryAthleteCategory');const old=select.value;select.replaceChildren(new Option('Tutte le categorie','all'));[...new Set(historyData.athletes.map(a=>a.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'it')).forEach(c=>select.append(new Option(c,c)));select.value=[...select.options].some(o=>o.value===old)?old:'all'}
-function renderAll(){renderSummary();populateCategories();renderEvents();renderAthletes()}
+function renderAll(){renderSummary();populateCategories();renderEventsWithResults();renderAthletes()}
 
 async function loadHistory(){if(loaded)return;const [{data,error},{data:attendees,error:attendeesError},{data:results,error:resultsError}]=await Promise.all([db.rpc('v2_get_public_history'),db.rpc('v2_get_public_history_attendees'),db.rpc('v2_get_public_history_results')]);if(error){toast('Storico non disponibile: '+error.message);return}historyData=data||historyData;if(!attendeesError&&Array.isArray(attendees)){const byEvent=new Map(attendees.map(row=>[`${row.event_title}||${row.season_name||''}`,Array.isArray(row.athletes)?row.athletes:[]]));historyData.events=(historyData.events||[]).map(event=>({...event,confirmed_athletes:byEvent.get(`${event.title}||${event.season_name||''}`)||event.confirmed_athletes||[]}))}historyResults=new Map();if(!resultsError&&Array.isArray(results))results.forEach(row=>historyResults.set(resultKey(row.athlete_name,row.event_title,row.season_name),Array.isArray(row.results)?row.results:[]));loaded=true;renderAll()}
 async function openHistory(){await loadHistory();if(!loaded)return;$('eventsList').classList.add('hidden');$('eventView').classList.add('hidden');$('publicHistoryView').classList.remove('hidden');$('eventTitle').textContent='Storico Juvenilia';$('eventDescription').textContent='Gare e statistiche della squadra';window.scrollTo({top:0,behavior:'auto'})}
@@ -76,7 +163,7 @@ $('openPublicHistory')?.addEventListener('click',openHistory);
 $('closePublicHistory')?.addEventListener('click',closeHistory);
 $('publicHistoryEventsBtn')?.addEventListener('click',()=>showPanel('events'));
 $('publicHistoryAthletesBtn')?.addEventListener('click',()=>showPanel('athletes'));
-$('publicHistoryEventSearch')?.addEventListener('input',renderEvents);
-$('publicHistoryEventFilter')?.addEventListener('change',renderEvents);
+$('publicHistoryEventSearch')?.addEventListener('input',renderEventsWithResults);
+$('publicHistoryEventFilter')?.addEventListener('change',renderEventsWithResults);
 $('publicHistoryAthleteSearch')?.addEventListener('input',renderAthletes);
 $('publicHistoryAthleteCategory')?.addEventListener('change',renderAthletes);

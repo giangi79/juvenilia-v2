@@ -16,3 +16,11 @@
 .public-athlete-result small,.public-athlete-result strong{display:block}
 .public-athlete-result small{margin-bottom:4px;color:#8ed8ff}
 .public-athlete-result strong{color:#e7f7ff;font-size:.83rem;line-height:1.45;white-space:pre-wrap}
+
+/* Risultati apribili direttamente dall'elenco iscritti della gara */
+.public-history-attendees li{display:block}
+.public-history-attendee-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.public-history-attendee-name{padding:0;border:0;background:transparent;color:#8ed8ff;font:inherit;font-weight:800;text-align:left;cursor:pointer}
+.public-history-attendee-name:hover,.public-history-attendee-name:focus-visible{color:#dff5ff;text-decoration:underline}
+.public-history-attendee-name i{margin-right:5px}
+.public-history-attendee-results{display:grid;gap:7px;margin-top:10px;padding-top:10px;border-top:1px solid #355a78}
