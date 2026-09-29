@@ -110,8 +110,16 @@ function finalRankingPosition(title:string,cells:string[]){
 }
 
 function conciseResult(title:string,cells:string[],fallback:string){
+  const isFinal=normalize(title).includes('CLASSIFICA FINALE');
   const position=finalRankingPosition(title,cells);
-  return position?`${position}°`:fallback;
+  if(position)return `${position}°`;
+  if(isFinal){
+    const values=cells.map(cell=>normalize(String(cell||''))).filter(Boolean);
+    if(values.includes('NP'))return 'NP';
+    // In una classifica finale senza posizione non mostriamo mai il numero gara come risultato.
+    if(!String(cells[0]||'').trim())return 'Non classificato';
+  }
+  return fallback;
 }
 
 async function fetchPage(url:string){
