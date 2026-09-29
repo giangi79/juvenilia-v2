@@ -4253,6 +4253,28 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
 }
 
 
-/* Titolo Dashboard Competizioni Juvenilia */
-.competizioni-title > span{color:#ffd51f;}
-.competizioni-title > strong{color:#1769c2;font-weight:inherit;}
+/* Titolo Dashboard Competizioni Juvenilia: effetto 3D sfumato, sempre leggibile */
+.competizioni-title{
+  letter-spacing:-.035em;
+  text-shadow:0 4px 0 rgba(4,18,35,.22),0 8px 18px rgba(3,17,31,.28);
+}
+.competizioni-title > span,
+.competizioni-title > strong{
+  display:inline-block;
+  font-weight:inherit;
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:none;
+  filter:drop-shadow(0 2px 0 rgba(4,18,35,.34)) drop-shadow(0 5px 5px rgba(3,17,31,.24));
+}
+.competizioni-title > span{
+  color:#ffd51f;
+  background-image:linear-gradient(180deg,#fff8a5 0%,#ffe13b 34%,#f1b400 72%,#c47b00 100%);
+  -webkit-text-stroke:1px rgba(132,83,0,.22);
+}
+.competizioni-title > strong{
+  color:#1769c2;
+  background-image:linear-gradient(180deg,#a8ecff 0%,#46bde9 30%,#1769c2 70%,#0b3d82 100%);
+  -webkit-text-stroke:1px rgba(5,47,101,.28);
+}
