@@ -2,6 +2,8 @@ import { db } from './supabase.js';
 import { toast } from './ui.js';
 
 const $=id=>document.getElementById(id);
+const formatRaceDate=value=>new Intl.DateTimeFormat('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date(value+'T12:00:00'));
+function updateDatePreview(){for(const prefix of ['Start','End']){const value=$('event'+prefix+'DateInput')?.value,preview=$('event'+prefix+'DatePreview');if(preview)preview.textContent=value?formatRaceDate(value):''}}
 const KEYS=['event_location','event_date_text','event_start_date','event_end_date','event_program_url','event_maps_url'];
 
 function ensureFields(){
@@ -15,10 +17,12 @@ function ensureFields(){
   const locationLabel=document.createElement('label');
   locationLabel.innerHTML='Luogo<input id="eventLocationInput" type="text" placeholder="Es. Senigallia">';
   const dateLabel=document.createElement('div');
-  dateLabel.innerHTML='<label>Data inizio<input id="eventStartDateInput" type="date"></label><small id="eventLegacyDate" class="muted"></small><input id="eventDateTextInput" type="hidden">';
+  dateLabel.innerHTML='<label>Data inizio<input id="eventStartDateInput" type="date"><small id="eventStartDatePreview" class="muted"></small></label><small id="eventLegacyDate" class="muted"></small><input id="eventDateTextInput" type="hidden">';
   const endLabel=document.createElement('label');
-  endLabel.innerHTML='Data fine<input id="eventEndDateInput" type="date"><small class="muted">Per una gara di un solo giorno puoi lasciarla vuota.</small>';
+  endLabel.innerHTML='Data fine<input id="eventEndDateInput" type="date"><small id="eventEndDatePreview" class="muted"></small><small class="muted">Per una gara di un solo giorno puoi lasciarla vuota.</small>';
   dateLabel.append(endLabel);
+  dateLabel.addEventListener('input',updateDatePreview);
+  dateLabel.addEventListener('change',updateDatePreview);
   dateLabel.addEventListener('change',()=>{const start=$('eventStartDateInput'),end=$('eventEndDateInput');end.min=start.value;end.setCustomValidity(end.value&&(!start.value||end.value<start.value)?'La data fine deve essere uguale o successiva alla data inizio.':'')});
   const programLabel=document.createElement('label');
   programLabel.innerHTML='Link programma<input id="eventProgramUrlInput" type="url" placeholder="https://..."><small class="muted">Facoltativo. Attiva il pulsante Programma nella Dashboard.</small>';
@@ -32,7 +36,7 @@ function ensureFields(){
 async function loadFields(){
   ensureFields();
   const eventId=$('eventSelect')?.value;
-  if(!eventId){$('eventLocationInput').value='';$('eventDateTextInput').value='';$('eventStartDateInput').value='';$('eventEndDateInput').value='';$('eventEndDateInput').min='';$('eventEndDateInput').setCustomValidity('');$('eventLegacyDate').textContent='';$('eventProgramUrlInput').value='';$('eventMapsUrlInput').value='';return}
+  if(!eventId){$('eventLocationInput').value='';$('eventDateTextInput').value='';$('eventStartDateInput').value='';$('eventEndDateInput').value='';$('eventEndDateInput').min='';$('eventEndDateInput').setCustomValidity('');$('eventLegacyDate').textContent='';updateDatePreview();$('eventProgramUrlInput').value='';$('eventMapsUrlInput').value='';return}
   const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',KEYS);
   if(error)return;
   if($('eventSelect')?.value!==eventId)return;
@@ -41,6 +45,7 @@ async function loadFields(){
   $('eventDateTextInput').value=typeof map.event_date_text==='string'?map.event_date_text:'';
   $('eventStartDateInput').value=map.event_start_date||'';
   $('eventEndDateInput').value=map.event_end_date||'';
+  updateDatePreview();
   $('eventEndDateInput').min=$('eventStartDateInput').value;
   $('eventEndDateInput').setCustomValidity('');
   $('eventLegacyDate').textContent=!map.event_start_date&&map.event_date_text?'Data precedente: '+map.event_date_text+'. Seleziona le date per aggiornarla.':'';
@@ -52,7 +57,7 @@ async function saveFieldsFor(eventId){
   if(!eventId)return;
   const location=$('eventLocationInput')?.value.trim()||'';
   const start=$('eventStartDateInput').value,end=$('eventEndDateInput').value;
-  const format=value=>new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'long',year:'numeric'}).format(new Date(value+'T12:00:00'));
+  const format=formatRaceDate;
   const dateText=start?(end&&end!==start?format(start)+' – '+format(end):format(start)):($('eventDateTextInput')?.value.trim()||'');
   const programUrl=$('eventProgramUrlInput')?.value.trim()||'';
   const mapsUrl=$('eventMapsUrlInput')?.value.trim()||'';
@@ -70,7 +75,7 @@ async function saveFieldsFor(eventId){
 
 ensureFields();
 $('eventSelect')?.addEventListener('change',()=>setTimeout(loadFields,80));
-$('newEventBtn')?.addEventListener('click',()=>setTimeout(()=>{ensureFields();$('eventLocationInput').value='';$('eventDateTextInput').value='';$('eventStartDateInput').value='';$('eventEndDateInput').value='';$('eventEndDateInput').min='';$('eventEndDateInput').setCustomValidity('');$('eventLegacyDate').textContent='';$('eventProgramUrlInput').value='';$('eventMapsUrlInput').value=''},0));
+$('newEventBtn')?.addEventListener('click',()=>setTimeout(()=>{ensureFields();$('eventLocationInput').value='';$('eventDateTextInput').value='';$('eventStartDateInput').value='';$('eventEndDateInput').value='';$('eventEndDateInput').min='';$('eventEndDateInput').setCustomValidity('');$('eventLegacyDate').textContent='';updateDatePreview();$('eventProgramUrlInput').value='';$('eventMapsUrlInput').value=''},0));
 $('saveEventBtn')?.addEventListener('click',event=>{
   const start=$('eventStartDateInput'),end=$('eventEndDateInput');
   if(end.value&&(!start.value||end.value<start.value)){event.preventDefault();event.stopImmediatePropagation();end.setCustomValidity('La data fine deve essere uguale o successiva alla data inizio.');end.reportValidity();return}
