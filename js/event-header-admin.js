@@ -2,7 +2,7 @@ import { db } from './supabase.js';
 import { toast } from './ui.js';
 
 const $=id=>document.getElementById(id);
-const KEYS=['event_location','event_date_text'];
+const KEYS=['event_location','event_date_text','event_program_url','event_maps_url'];
 
 function ensureFields(){
   if($('eventLocationInput'))return;
@@ -16,29 +16,39 @@ function ensureFields(){
   locationLabel.innerHTML='Luogo<input id="eventLocationInput" type="text" placeholder="Es. Senigallia">';
   const dateLabel=document.createElement('label');
   dateLabel.innerHTML='Data<input id="eventDateTextInput" type="text" placeholder="Es. 20-21 settembre 2026"><small class="muted">Scrivila liberamente, senza calendario.</small>';
+  const programLabel=document.createElement('label');
+  programLabel.innerHTML='Link programma<input id="eventProgramUrlInput" type="url" placeholder="https://..."><small class="muted">Facoltativo. Attiva il pulsante Programma nella Dashboard.</small>';
+  const mapsLabel=document.createElement('label');
+  mapsLabel.innerHTML='Link Google Maps<input id="eventMapsUrlInput" type="url" placeholder="https://maps.app.goo.gl/..."><small class="muted">Facoltativo: se vuoto, Maps cercherà automaticamente il luogo indicato.</small>';
   const slugLabel=$('eventSlugInput')?.closest('label');
-  if(slugLabel){slugLabel.insertAdjacentElement('beforebegin',locationLabel);locationLabel.insertAdjacentElement('afterend',dateLabel)}
-  else grid.append(locationLabel,dateLabel);
+  if(slugLabel){slugLabel.insertAdjacentElement('beforebegin',locationLabel);locationLabel.insertAdjacentElement('afterend',dateLabel);dateLabel.insertAdjacentElement('afterend',programLabel);programLabel.insertAdjacentElement('afterend',mapsLabel)}
+  else grid.append(locationLabel,dateLabel,programLabel,mapsLabel);
 }
 
 async function loadFields(){
   ensureFields();
   const eventId=$('eventSelect')?.value;
-  if(!eventId){$('eventLocationInput').value='';$('eventDateTextInput').value='';return}
+  if(!eventId){$('eventLocationInput').value='';$('eventDateTextInput').value='';$('eventProgramUrlInput').value='';$('eventMapsUrlInput').value='';return}
   const {data,error}=await db.from('v2_event_config').select('key,value').eq('event_id',eventId).in('key',KEYS);
   if(error)return;
   const map=Object.fromEntries((data||[]).map(r=>[r.key,r.value]));
   $('eventLocationInput').value=typeof map.event_location==='string'?map.event_location:'';
   $('eventDateTextInput').value=typeof map.event_date_text==='string'?map.event_date_text:'';
+  $('eventProgramUrlInput').value=typeof map.event_program_url==='string'?map.event_program_url:'';
+  $('eventMapsUrlInput').value=typeof map.event_maps_url==='string'?map.event_maps_url:'';
 }
 
 async function saveFieldsFor(eventId){
   if(!eventId)return;
   const location=$('eventLocationInput')?.value.trim()||'';
   const dateText=$('eventDateTextInput')?.value.trim()||'';
+  const programUrl=$('eventProgramUrlInput')?.value.trim()||'';
+  const mapsUrl=$('eventMapsUrlInput')?.value.trim()||'';
   const rows=[
     {event_id:eventId,key:'event_location',value:location,is_public:true},
-    {event_id:eventId,key:'event_date_text',value:dateText,is_public:true}
+    {event_id:eventId,key:'event_date_text',value:dateText,is_public:true},
+    {event_id:eventId,key:'event_program_url',value:programUrl,is_public:true},
+    {event_id:eventId,key:'event_maps_url',value:mapsUrl,is_public:true}
   ];
   const {error}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
   if(error)toast('Gara salvata, ma luogo/data non salvati: '+error.message);
@@ -46,7 +56,7 @@ async function saveFieldsFor(eventId){
 
 ensureFields();
 $('eventSelect')?.addEventListener('change',()=>setTimeout(loadFields,80));
-$('newEventBtn')?.addEventListener('click',()=>setTimeout(()=>{ensureFields();$('eventLocationInput').value='';$('eventDateTextInput').value=''},0));
+$('newEventBtn')?.addEventListener('click',()=>setTimeout(()=>{ensureFields();$('eventLocationInput').value='';$('eventDateTextInput').value='';$('eventProgramUrlInput').value='';$('eventMapsUrlInput').value=''},0));
 $('saveEventBtn')?.addEventListener('click',()=>{
   const title=$('eventTitleInput')?.value.trim();
   const before=$('eventSelect')?.value;
