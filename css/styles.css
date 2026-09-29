@@ -4251,3 +4251,8 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
     background-position:center,24% center;
   }
 }
+
+
+/* Titolo Dashboard Competizioni Juvenilia */
+.competizioni-title > span{color:#ffd51f;}
+.competizioni-title > strong{color:#1769c2;font-weight:inherit;}
