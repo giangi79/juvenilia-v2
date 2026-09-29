@@ -96,12 +96,21 @@ function isJuveniliaResult(cells:string[]){
   return cells.some(cell=>normalize(cell).split(' ').includes('JUVENILIA'));
 }
 
+function finalRankingPosition(title:string,cells:string[]){
+  if(!normalize(title).includes('CLASSIFICA FINALE'))return '';
+  // Una riga classificata deve avere sia posizione sia numero gara separati.
+  // Se la posizione manca, il numero gara può diventare la prima cella:
+  // non deve mai essere interpretato come piazzamento.
+  if(cells.length<4)return '';
+  const position=String(cells[0]||'').trim();
+  const raceNumber=String(cells[1]||'').trim();
+  if(!/^\d+$/.test(position)||!/^\d+$/.test(raceNumber))return '';
+  return position;
+}
+
 function conciseResult(title:string,cells:string[],fallback:string){
-  if(normalize(title).includes('CLASSIFICA FINALE')){
-    const position=String(cells[0]||'').trim();
-    if(/^\d+$/.test(position))return `${position}°`;
-  }
-  return fallback;
+  const position=finalRankingPosition(title,cells);
+  return position?`${position}°`:fallback;
 }
 
 async function fetchPage(url:string){
