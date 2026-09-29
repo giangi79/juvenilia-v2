@@ -13,6 +13,9 @@ function displayedResult(row){
     const position=String(cells[0]||'').trim();
     const raceNumber=String(cells[1]||'').trim();
     if(cells.length>=4&&/^\d+$/.test(position)&&/^\d+$/.test(raceNumber))return `${position}°`;
+    const values=cells.map(cell=>String(cell||'').trim().toLocaleUpperCase('it')).filter(Boolean);
+    if(values.includes('NP'))return 'NP';
+    if(!position)return 'Non classificato';
   }
   return row?.result_text||'Risultato disponibile';
 }
