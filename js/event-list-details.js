@@ -4,8 +4,10 @@ const list=document.getElementById('eventsList');
 let busy=false;
 
 function safeUrl(value){
+  const raw=String(value||'').trim();
+  if(!raw)return '';
   try{
-    const url=new URL(String(value||'').trim(),location.href);
+    const url=new URL(raw,location.href);
     return ['http:','https:'].includes(url.protocol)?url.href:'';
   }catch{return ''}
 }
