@@ -1,6 +1,6 @@
 import './event-categories.js?v=defaults-4';
 import './race-days-admin.js?v=giorni-gara-2';
-import './event-header-admin.js?v=3';
+import './event-header-admin.js?v=4';
 import './admin-mobile-cards.js?v=1';
 import './admin-unlock-reset.js?v=7';
 import { db } from './supabase.js';
