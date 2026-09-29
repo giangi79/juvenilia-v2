@@ -6,7 +6,7 @@ const groups={
   advanced:{button:'advSaveConfigBtn',label:'Salva impostazioni'}
 };
 
-const eventFields=new Set(['eventTitleInput','eventSlugInput','eventDeadlineInput','eventDescriptionInput','eventPublishedInput','eventArchivedInput','eventSeasonInput','eventLocationInput','eventDateTextInput']);
+const eventFields=new Set(['eventTitleInput','eventSlugInput','eventDeadlineInput','eventDescriptionInput','eventPublishedInput','eventArchivedInput','eventSeasonInput','eventLocationInput','eventDateTextInput','eventStartDateInput','eventEndDateInput','eventProgramUrlInput','eventMapsUrlInput']);
 const configFields=new Set(['cfgSubtitle','cfgInfoVisible','cfgCompanion','cfgInfoEditor','cfgDoc1Text','cfgDoc1Url','cfgDoc2Text','cfgDoc2Url','cfgInfoTextColor','cfgInfoBgColor']);
 const advancedFields=new Set(['advDayA','advDayB','advDayC','advShowCosts','advPayHolder','advPayIban','advPayReason','advPayEmail']);
 const states={event:'idle',config:'idle',advanced:'idle'};
