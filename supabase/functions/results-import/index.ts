@@ -65,9 +65,10 @@ function pageTitle(html:string,url:string){
 function rowsOf(html:string){
   const rows:{cells:string[],text:string}[]=[];
   for(const row of html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){
-    const cells=[...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>textOf(x[1])).filter(Boolean);
+    const cells=[...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>textOf(x[1]));
+    // Le celle vuote sono significative: posizione vuota + numero gara = NP/non classificato.
     const text=cells.join(' | ');
-    if(cells.length&&text)rows.push({cells,text});
+    if(cells.length&&cells.some(Boolean))rows.push({cells,text});
   }
   if(rows.length)return rows;
   return html.split(/<br\s*\/?\s*>|\r?\n/gi).map(textOf).filter(x=>x.length>5).map(text=>({cells:[text],text}));
