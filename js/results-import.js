@@ -9,8 +9,10 @@ function eventId(){return creatingEvent?'':$('eventSelect')?.value||''}
 function cleanUrl(){return $('eventResultsUrl')?.value.trim()||''}
 function displayedResult(row){
   if(String(row?.page_title||'').toLocaleUpperCase('it').includes('CLASSIFICA FINALE')){
-    const position=String(row?.result_cells?.[0]||'').trim();
-    if(/^\d+$/.test(position))return `${position}°`;
+    const cells=Array.isArray(row?.result_cells)?row.result_cells:[];
+    const position=String(cells[0]||'').trim();
+    const raceNumber=String(cells[1]||'').trim();
+    if(cells.length>=4&&/^\d+$/.test(position)&&/^\d+$/.test(raceNumber))return `${position}°`;
   }
   return row?.result_text||'Risultato disponibile';
 }
