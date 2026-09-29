@@ -1,5 +1,16 @@
 import { db } from './supabase.js';
 
+function raceDateDisplay(cfg){
+  const parse=value=>{if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;const d=new Date(value+'T12:00:00Z');return Number.isNaN(d.getTime())?null:d};
+  const start=parse(cfg.event_start_date),end=parse(cfg.event_end_date)||start;
+  if(!start||end<start)return {date:typeof cfg.event_date_text==='string'?cfg.event_date_text.trim():'',days:''};
+  const format=d=>new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(d);
+  const names=[],count=Math.round((end-start)/86400000)+1;
+  for(let i=0;i<Math.min(count,366);i++){const d=new Date(start.getTime()+i*86400000);let name=new Intl.DateTimeFormat('it-IT',{weekday:'long',timeZone:'UTC'}).format(d);names.push(name[0].toUpperCase()+name.slice(1))}
+  return {date:start.getTime()===end.getTime()?format(start):format(start)+' – '+format(end),days:names.join(' · ')};
+}
+
+
 const list=document.getElementById('eventsList');
 let busy=false;
 
@@ -101,11 +112,11 @@ async function enrichEventCards(){
       const detail=details[index]?.title===title?details[index]:details.find(item=>item.title===title);
       if(!detail)return;
       const place=typeof detail.config.event_location==='string'?detail.config.event_location.trim():'';
-      const date=typeof detail.config.event_date_text==='string'?detail.config.event_date_text.trim():'';
+      const {date,days}=raceDateDisplay(detail.config);
       if(place||date){
         const box=document.createElement('div');box.className='event-list-place-date';
         if(place){const row=document.createElement('div');row.innerHTML='<i class="fas fa-location-dot" aria-hidden="true"></i>';const span=document.createElement('span');span.textContent=place;row.append(span);box.append(row)}
-        if(date){const row=document.createElement('div');row.innerHTML='<i class="fas fa-calendar-days" aria-hidden="true"></i>';const span=document.createElement('span');span.textContent=date;row.append(span);box.append(row)}
+        if(date){const row=document.createElement('div');row.innerHTML='<i class="fas fa-calendar-days" aria-hidden="true"></i>';const span=document.createElement('span');span.textContent=date;const stack=document.createElement('div');stack.append(span);if(days){const line=document.createElement('small');line.className='event-weekdays';line.textContent=days;stack.append(line)}row.append(stack);box.append(row)}
         const deadline=card.querySelector('.event-meta');
         deadline?.insertAdjacentElement('beforebegin',box);
       }
