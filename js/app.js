@@ -32,7 +32,7 @@ function renderEventList(events){
   const list=document.getElementById('eventsList');list.replaceChildren();
   document.getElementById('eventView').classList.add('hidden');list.classList.remove('hidden');
   showHistoryButton(true);
-  document.getElementById('eventTitle').textContent='Gare Juvenilia';
+  document.getElementById('eventTitle').innerHTML='<span>COMPETIZIONI</span> <strong>JUVENILIA</strong>';
   document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';
   stopHeroCountdown();
   const now=Date.now();
