@@ -6,3 +6,15 @@
 #eventsList .event-expired-badge:first-child{margin-left:0}
 #eventsList .event-expired-badge + h2::before{content:none}
 @media(max-width:850px){#eventsList .event-list-grid{grid-template-columns:1fr}}
+
+#eventsList .expired-events-compact{border:1px solid rgba(224,137,137,.62);border-radius:16px;background:rgba(67,31,39,.46);overflow:hidden}
+#eventsList .expired-events-compact summary{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 15px;cursor:pointer;list-style:none;color:#fff}
+#eventsList .expired-events-compact summary::-webkit-details-marker{display:none}
+#eventsList .expired-events-compact summary::after{content:'⌄';margin-left:auto;font-size:1.25rem;font-weight:900;transition:transform .18s ease}
+#eventsList .expired-events-compact[open] summary::after{transform:rotate(180deg)}
+#eventsList .expired-events-title{min-width:0}.expired-events-title .event-list-section-title{margin:0!important;font-size:1.05rem!important}
+#eventsList .expired-events-count{display:inline-grid;place-items:center;min-width:25px;height:25px;padding:0 6px;border-radius:999px;background:#f07780;color:#59121a;font-size:.8rem;font-weight:900}
+#eventsList .expired-events-hint{color:#ffd7d7;font-size:.78rem;font-weight:800;white-space:nowrap}
+#eventsList .expired-events-compact[open] .expired-events-hint{display:none}
+#eventsList .expired-events-compact .event-list-grid{padding:0 15px 15px}
+@media(max-width:500px){#eventsList .expired-events-compact summary{padding:0 12px}#eventsList .expired-events-compact .event-list-grid{padding:0 12px 12px}.expired-events-title .event-list-section-title{font-size:.98rem!important}.expired-events-hint{display:none}}
