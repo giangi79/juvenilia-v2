@@ -4293,3 +4293,39 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
 .compact-public-content> :first-child{margin-top:0}
 .compact-public-content> :last-child{margin-bottom:0}
 @media(max-width:600px){.compact-public-section summary{padding:0 12px}.compact-public-content{padding:0 12px 12px}}
+
+
+/* Riepilogo stati compatto: tre riquadri affiancati anche su mobile */
+@media(max-width:700px){
+  .stats{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    margin:12px 0!important;
+  }
+  .stats .stat{
+    min-width:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:center!important;
+    align-items:center!important;
+    gap:4px!important;
+    padding:9px 3px!important;
+    text-align:center!important;
+    border-radius:11px!important;
+  }
+  .stats .stat-icon{
+    width:28px!important;
+    height:28px!important;
+    border-radius:8px!important;
+    font-size:.95rem!important;
+  }
+  .stats .stat strong{
+    font-size:1.15rem!important;
+  }
+  .stats .stat span:not(.stat-icon){
+    margin-top:0!important;
+    font-size:.64rem!important;
+    line-height:1.1!important;
+    white-space:normal!important;
+  }
+}
