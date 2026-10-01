@@ -118,17 +118,15 @@ function openQuickRegistrationConfirmation(event,athlete){
 }
 
 function openRegistrationDialog(event,registrations){
-  const athletes=(registrations||[]).slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''),'it'));
+  const athletes=(registrations||[]).filter(a=>a.status!=='yes').slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''),'it'));
   const dialog=document.createElement('dialog');
   dialog.className='quick-registration-dialog';
-  dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">ISCRIZIONE ATLETA</div><h2></h2><p class="quick-registration-help">Cerca per nome o numero gara, seleziona l’atleta e conferma la partecipazione.</p><label class="quick-registration-label">Nome atleta o numero gara<input type="search" autocomplete="off" placeholder="Nome atleta o numero gara"></label><div class="quick-registration-results" aria-live="polite"></div><p class="quick-registration-state" aria-live="polite"></p><div class="quick-registration-actions"><button type="button" class="quick-registration-confirm" disabled><i class="fas fa-check"></i> Conferma iscrizione</button></div></form>';
+  dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">ISCRIZIONE ATLETA</div><h2></h2><p class="quick-registration-help">Cerca per nome o numero gara e seleziona l’atleta.</p><label class="quick-registration-label">Nome atleta o numero gara<input type="search" autocomplete="off" placeholder="Nome atleta o numero gara"></label><div class="quick-registration-results" aria-live="polite"></div><p class="quick-registration-state" aria-live="polite"></p></form>';
   dialog.querySelector('h2').textContent=event.title||'Gara';
   const input=dialog.querySelector('input');
   const results=dialog.querySelector('.quick-registration-results');
   const state=dialog.querySelector('.quick-registration-state');
   const help=dialog.querySelector('.quick-registration-help');
-  const confirmButton=dialog.querySelector('.quick-registration-confirm');
-  let selected=null;
   const render=()=>{
     const query=input.value.trim().toLocaleLowerCase('it');
     results.replaceChildren();
@@ -137,7 +135,7 @@ function openRegistrationDialog(event,registrations){
     input.closest('.quick-registration-label').hidden=false;
     input.closest('.quick-registration-label').style.removeProperty('display');
     help.style.removeProperty('display');
-    selected=null;confirmButton.disabled=true;state.classList.remove('is-confirmation');state.textContent='';
+    state.classList.remove('is-confirmation');state.textContent='';
     if(!query)return;
     const matches=athletes.filter(a=>{
       const name=String(a.full_name||'').toLocaleLowerCase('it');
@@ -158,15 +156,6 @@ function openRegistrationDialog(event,registrations){
     });
   };
   input.addEventListener('input',render);
-  confirmButton.onclick=async()=>{
-    if(!selected)return;
-    confirmButton.disabled=true;state.textContent='Salvataggio iscrizione…';
-    const {error}=await db.rpc('v2_set_registration_status',{p_event_slug:event.slug,p_athlete_id:selected.athlete_id,p_status:'yes'});
-    if(error){state.textContent='Non è stato possibile confermare: '+error.message;confirmButton.disabled=false;return}
-    dialog.close();
-    showQuickRegistrationCelebration();
-    await enrichEventCards();
-  };
   dialog.addEventListener('close',()=>dialog.remove());
   document.body.append(dialog);dialog.showModal();input.focus();
 }
