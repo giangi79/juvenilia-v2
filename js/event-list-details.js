@@ -127,6 +127,7 @@ function renderActions(card,event,config,registrations){
   registrationButton.innerHTML='<i class="fas fa-user-plus" aria-hidden="true"></i><span>Iscrivi atleta</span>';
   registrationButton.onclick=()=>openRegistrationDialog(event,registrations);
   actions.append(registrationButton);
+  actions.append(actionLink('Apri gara','fa-flag-checkered','?gara='+encodeURIComponent(event.slug)));
 
   const attendees=attendeePanel(registrations);
   const attendeesButton=document.createElement('button');
