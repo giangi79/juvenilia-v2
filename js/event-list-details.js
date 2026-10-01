@@ -118,7 +118,7 @@ function openRegistrationDialog(event,registrations){
 function renderActions(card,event,config,registrations){
   card.querySelector('.event-card-actions')?.remove();
   card.querySelector('.event-card-attendees')?.remove();
-  card.querySelector(':scope > button')?.remove();
+  card.querySelectorAll(':scope > button').forEach(button=>button.remove());
 
   const actions=document.createElement('div');actions.className='event-card-actions';
   const registrationButton=document.createElement('button');
