@@ -67,6 +67,31 @@ function attendeePanel(registrations){
   return {panel,count:confirmed.length};
 }
 
+function showQuickRegistrationCelebration(){
+  const overlay=document.getElementById('celebrationEffect');
+  if(!overlay)return;
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden','false');
+  const burst=document.createElement('div');
+  burst.className='celebration-particles';
+  const symbols=['🛼','★','●','◆'];
+  for(let i=0;i<28;i++){
+    const symbol=document.createElement('span');
+    symbol.textContent=symbols[i%symbols.length];
+    symbol.style.setProperty('--x',`${(Math.random()-.5)*90}vw`);
+    symbol.style.setProperty('--y',`${(Math.random()-.5)*90}vh`);
+    symbol.style.setProperty('--r',`${Math.round((Math.random()-.5)*720)}deg`);
+    symbol.style.setProperty('--d',`${Math.random()*.35}s`);
+    burst.append(symbol);
+  }
+  overlay.append(burst);
+  setTimeout(()=>{
+    overlay.classList.add('hidden');
+    overlay.setAttribute('aria-hidden','true');
+    burst.remove();
+  },1550);
+}
+
 function openRegistrationDialog(event,registrations){
   const athletes=(registrations||[]).slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''),'it'));
   const dialog=document.createElement('dialog');
@@ -95,9 +120,11 @@ function openRegistrationDialog(event,registrations){
       const details=document.createElement('span');details.textContent=[athlete.category,athlete.race_number!=null?'N. '+athlete.race_number:''].filter(Boolean).join(' · ');
       button.append(name,details);
       button.onclick=()=>{
-        selected=athlete;input.value=athlete.full_name||'';
-        [...results.children].forEach(item=>item.classList.remove('is-selected'));button.classList.add('is-selected');
-        confirmButton.disabled=false;state.textContent='Selezionato/a: '+(athlete.full_name||'Atleta')+'.';
+        selected=athlete;
+        input.value=athlete.full_name||'';
+        results.replaceChildren();
+        confirmButton.disabled=false;
+        state.textContent='Confermi per '+(athlete.full_name||'atleta')+'?';
       };
       results.append(button);
     });
@@ -108,7 +135,8 @@ function openRegistrationDialog(event,registrations){
     confirmButton.disabled=true;state.textContent='Salvataggio iscrizione…';
     const {error}=await db.rpc('v2_set_registration_status',{p_event_slug:event.slug,p_athlete_id:selected.athlete_id,p_status:'yes'});
     if(error){state.textContent='Non è stato possibile confermare: '+error.message;confirmButton.disabled=false;return}
-    state.textContent='Iscrizione confermata per '+(selected.full_name||'atleta')+'.';
+    dialog.close();
+    showQuickRegistrationCelebration();
     await enrichEventCards();
   };
   dialog.addEventListener('close',()=>dialog.remove());
