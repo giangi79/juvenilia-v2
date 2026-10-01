@@ -4038,8 +4038,10 @@ body.dark #categoryDeadlinesBox,[data-theme="dark"] #categoryDeadlinesBox{
   #athletesBody td:nth-child(1)::before{content:"Atleta"}
   #athletesBody td:nth-child(2)::before{content:"Categoria"}
   #athletesBody td:nth-child(3)::before{content:"Sesso"}
-  #athletesBody td:nth-child(4)::before{content:"Attivo"}
-  #athletesBody td:nth-child(5)::before{content:"Azioni"}
+  #athletesBody td:nth-child(4)::before{content:"Compleanno"}
+  #athletesBody td:nth-child(5)::before{content:"Numero gara"}
+  #athletesBody td:nth-child(6)::before{content:"Attivo"}
+  #athletesBody td:nth-child(7)::before{content:"Azioni"}
 
   #registrationsBody td:nth-child(1)::before{content:"Seleziona"}
   #registrationsBody td:nth-child(2)::before{content:"Atleta"}
