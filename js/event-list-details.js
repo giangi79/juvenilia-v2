@@ -93,7 +93,8 @@ function showQuickRegistrationCelebration(){
 }
 
 function openQuickRegistrationConfirmation(event,athlete){
-  const days=Array.isArray(event.config?.athlete_weekdays)?event.config.athlete_weekdays.filter(Boolean):[];
+  const configuredDays=event.config?.athlete_weekdays??event.config?.event_days??[];
+  const days=Array.isArray(configuredDays)?configuredDays.filter(Boolean):[];
   const dialog=document.createElement('dialog');
   dialog.className='quick-registration-dialog quick-registration-confirm-dialog';
   dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">CONFERMA ISCRIZIONE</div><h2>Confermi l’iscrizione?</h2><p class="quick-registration-selected-name"></p><div class="quick-registration-day-picker"></div><p class="quick-registration-state is-confirmation" aria-live="polite"></p><div class="quick-registration-actions"><button type="button" class="quick-registration-confirm"><i class="fas fa-check"></i> Conferma iscrizione</button><button value="cancel" class="quick-registration-cancel">Annulla</button></div></form>';
