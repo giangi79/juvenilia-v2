@@ -158,7 +158,7 @@ async function enrichEventCards(){
     if(error||!Array.isArray(events))return;
     const details=await Promise.all(events.map(async event=>{
       const {data}=await db.rpc('v2_get_public_event',{p_slug:event.slug});
-      return {slug:event.slug,title:event.title,config:data?.config||{},registrations:data?.registrations||[]};
+      return {slug:event.slug,title:event.title,registration_deadline:event.registration_deadline,config:data?.config||{},registrations:data?.registrations||[]};
     }));
     cards.forEach((card,index)=>{
       card.querySelector('.event-list-place-date')?.remove();
