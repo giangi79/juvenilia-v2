@@ -190,6 +190,8 @@ const style=document.createElement('style');style.textContent=`
 .event-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.28)}
 .event-card-action{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 12px;border:1px solid rgba(255,255,255,.72);border-radius:999px;background:rgba(16,91,171,.34);color:#fff;text-align:center;text-decoration:none;font:inherit;font-weight:800;cursor:pointer}
 .event-card-action:hover:not(.is-disabled):not(:disabled),.event-card-action:focus-visible{background:#0878cf;color:#fff;filter:none}
+.event-card-actions>.event-card-action:first-child{grid-column:1/-1;min-height:55px;background:#ffd166;border-color:#ffe29b;color:#123c62;font-size:1.03rem;box-shadow:0 7px 17px rgba(0,0,0,.18)}
+.event-card-actions>.event-card-action:first-child:hover,.event-card-actions>.event-card-action:first-child:focus-visible{background:#ffe29b;color:#0c355b}
 .event-card-action.is-open{background:#0878cf}
 .event-card-action.is-disabled,.event-card-action:disabled{opacity:.38;cursor:default}
 .quick-registration-dialog{width:min(560px,calc(100vw - 28px));border:0;border-radius:20px;padding:0;background:transparent;color:#17324d;box-shadow:0 28px 70px rgba(0,0,0,.38)}
