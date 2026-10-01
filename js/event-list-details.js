@@ -122,9 +122,11 @@ function renderActions(card,event,config,registrations){
 
   const actions=document.createElement('div');actions.className='event-card-actions';
   const registrationButton=document.createElement('button');
-  registrationButton.type='button';registrationButton.className='event-card-action';
-  registrationButton.innerHTML='<i class="fas fa-user-plus" aria-hidden="true"></i><span>Iscrivi atleta</span>';
-  registrationButton.onclick=()=>openRegistrationDialog(event,registrations);
+  const registrationExpired=event.registration_deadline&&Date.parse(event.registration_deadline)<=Date.now();
+  registrationButton.type='button';registrationButton.className='event-card-action'+(registrationExpired?' is-disabled':'');
+  registrationButton.innerHTML='<i class="fas fa-user-plus" aria-hidden="true"></i><span>'+ (registrationExpired?'Iscrizioni scadute':'Iscrivi atleta') +'</span>';
+  registrationButton.disabled=!!registrationExpired;
+  if(!registrationExpired)registrationButton.onclick=()=>openRegistrationDialog(event,registrations);
   actions.append(registrationButton);
   actions.append(actionLink('Apri gara','fa-flag-checkered','?gara='+encodeURIComponent(event.slug)));
 
