@@ -106,7 +106,9 @@ function openRegistrationDialog(event,registrations){
   const render=()=>{
     const query=input.value.trim().toLocaleLowerCase('it');
     results.replaceChildren();
-    selected=null;confirmButton.disabled=true;state.textContent='';
+    results.hidden=false;
+    input.closest('.quick-registration-label').hidden=false;
+    selected=null;confirmButton.disabled=true;state.classList.remove('is-confirmation');state.textContent='';
     if(!query)return;
     const matches=athletes.filter(a=>{
       const name=String(a.full_name||'').toLocaleLowerCase('it');
@@ -123,7 +125,10 @@ function openRegistrationDialog(event,registrations){
         selected=athlete;
         input.value=athlete.full_name||'';
         results.replaceChildren();
+        input.closest('.quick-registration-label').hidden=true;
+        results.hidden=true;
         confirmButton.disabled=false;
+        state.classList.add('is-confirmation');
         state.textContent='Confermi per '+(athlete.full_name||'atleta')+'?';
       };
       results.append(button);
