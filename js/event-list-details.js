@@ -160,10 +160,47 @@ function openRegistrationDialog(event,registrations){
   document.body.append(dialog);dialog.showModal();input.focus();
 }
 
+function renderCardRegistrationFees(card,config){
+  card.querySelector('.event-card-registration-fees')?.remove();
+  const box=document.createElement('div');
+  box.className='event-card-registration-fees';
+  const visible=config.show_category_costs!==false;
+  const message=document.createElement('strong');
+  message.textContent=visible?'Iscrizione a carico dell’atleta':'Iscrizione a carico della società';
+  box.append(message);
+  if(visible){
+    const costs=config.category_costs&&typeof config.category_costs==='object'?config.category_costs:{};
+    const entries=Object.entries(costs)
+      .map(([category,value])=>[category,Number(value)])
+      .filter(([,value])=>Number.isFinite(value)&&value>0)
+      .sort((x,y)=>x[0].localeCompare(y[0],'it'));
+    if(entries.length){
+      const details=document.createElement('details');
+      const summary=document.createElement('summary');
+      summary.textContent='Visualizza quote';
+      details.append(summary);
+      const list=document.createElement('div');
+      list.className='event-card-fees-list';
+      entries.forEach(([category,value])=>{
+        const row=document.createElement('div');
+        row.className='event-card-fee-row';
+        row.innerHTML='<span></span><strong></strong>';
+        row.firstElementChild.textContent=category;
+        row.lastElementChild.textContent=value.toFixed(2)+' €';
+        list.append(row);
+      });
+      details.append(list);
+      box.append(details);
+    }
+  }
+  card.querySelector('.event-card-actions')?.before(box);
+}
+
 function renderActions(card,event,config,registrations){
   card.querySelector('.event-card-actions')?.remove();
   card.querySelector('.event-card-attendees')?.remove();
   card.querySelectorAll(':scope > button').forEach(button=>button.remove());
+  renderCardRegistrationFees(card,config);
 
   const actions=document.createElement('div');actions.className='event-card-actions';
   const registrationButton=document.createElement('button');
@@ -249,6 +286,13 @@ const style=document.createElement('style');style.textContent=`
 .event-card-attendees li{display:flex;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:8px;background:rgba(255,255,255,.08)}
 .event-card-attendees li span{color:#b9d5e8;font-size:.78rem;text-align:right}
 .event-card-attendees p{margin:0}
+.event-card-registration-fees{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 10px;padding:9px 11px;border-radius:10px;background:rgba(5,26,43,.48);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:.82rem}
+.event-card-registration-fees strong{color:#fff}
+.event-card-registration-fees details{margin-left:auto}
+.event-card-registration-fees summary{cursor:pointer;color:#9fe9f4;font-weight:800;white-space:nowrap}
+.event-card-fees-list{display:grid;gap:5px;margin-top:7px;min-width:185px}
+.event-card-fee-row{display:flex;justify-content:space-between;gap:10px;padding:5px 7px;border-radius:7px;background:rgba(255,255,255,.1);color:#fff}
+@media(max-width:620px){.event-card-registration-fees{font-size:.75rem;align-items:flex-start}.event-card-registration-fees details{flex-shrink:0}.event-card-fees-list{min-width:165px}}
 @media(max-width:620px){.event-list-place-date{flex-direction:column;gap:7px;margin:12px 0 9px}.event-card-actions{gap:8px}.event-card-action{min-height:44px;padding:9px 8px;font-size:.9rem}.event-card-attendees ul{grid-template-columns:1fr}}
 `;
 document.head.append(style);
