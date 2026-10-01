@@ -56,7 +56,16 @@ function renderEventList(events){
       const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);
       card.append(h,meta,b);grid.append(card);
     });
-    section.append(heading,grid);list.append(section);
+    if(isExpired){
+      const details=document.createElement('details');details.className='expired-events-compact';
+      const summary=document.createElement('summary');
+      const titleWrap=document.createElement('span');titleWrap.className='expired-events-title';titleWrap.append(heading);
+      const count=document.createElement('span');count.className='expired-events-count';count.textContent=String(items.length);
+      const hint=document.createElement('span');hint.className='expired-events-hint';hint.textContent='Mostra gare';
+      summary.append(titleWrap,count,hint);
+      details.append(summary,grid);section.append(details);
+    }else section.append(heading,grid);
+    list.append(section);
   };
   addSection('Gare in programma',open,false);
   addSection('Gare con iscrizioni scadute',expired,true);
