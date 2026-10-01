@@ -193,7 +193,7 @@ function renderCardRegistrationFees(card,config){
       box.append(details);
     }
   }
-  card.querySelector('.event-card-actions')?.before(box);
+  card.append(box);
 }
 
 function renderActions(card,event,config,registrations){
