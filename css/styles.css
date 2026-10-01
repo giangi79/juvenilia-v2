@@ -4282,3 +4282,14 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
   background-image:linear-gradient(180deg,#a8ecff 0%,#46bde9 30%,#1769c2 70%,#0b3d82 100%);
   -webkit-text-stroke:1px rgba(5,47,101,.28);
 }
+
+.compact-public-section{width:100%;border:1px solid rgba(104,169,209,.55);border-radius:15px;background:rgba(21,57,84,.7);overflow:hidden}
+.compact-public-section summary{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 15px;cursor:pointer;list-style:none;color:#fff}
+.compact-public-section summary::-webkit-details-marker{display:none}
+.compact-public-section summary::after{content:'⌄';margin-left:auto;color:#8ed8ff;font-size:1.25rem;font-weight:900;transition:transform .18s ease}
+.compact-public-section[open] summary::after{transform:rotate(180deg)}
+.compact-public-count{display:inline-grid;place-items:center;min-width:25px;height:25px;padding:0 6px;border-radius:999px;background:#ffd166;color:#173e5a;font-size:.78rem;font-weight:900}
+.compact-public-content{padding:0 15px 15px;color:#eef6fb}
+.compact-public-content> :first-child{margin-top:0}
+.compact-public-content> :last-child{margin-bottom:0}
+@media(max-width:600px){.compact-public-section summary{padding:0 12px}.compact-public-content{padding:0 12px 12px}}
