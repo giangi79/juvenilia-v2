@@ -74,7 +74,7 @@ function renderEventList(events){
 function openEvent(slug){selectedSlug=slug;directEventMode=false;history.pushState({},'',`?gara=${encodeURIComponent(slug)}`);goTop();loadEvent(slug).then(goTop)}
 async function loadEvent(slug){const request=++posterRequest;renderPublicPoster(null);const {data,error}=await db.rpc('v2_get_public_event',{p_slug:slug});if(request!==posterRequest)return;if(error){showFatal(error.message);return}payload=data;if(!payload){showFatal('Gara non trovata.');return}renderEvent(payload);const poster=await db.rpc('v2_get_public_poster_path',{p_slug:slug});if(request===posterRequest&&!poster.error)renderPublicPoster(poster.data)}
 function ensureBackButton(){let back=document.getElementById('backEventsBtn');if(!back){back=document.createElement('button');back.id='backEventsBtn';back.className='back-events';back.type='button';back.innerHTML='<i class="fas fa-arrow-left" aria-hidden="true"></i> Tutte le gare';back.onclick=()=>{history.pushState({},'',location.pathname);selectedSlug=null;directEventMode=false;payload=null;loadEvents().then?.(goTop);goTop()}}return back}
-function renderEvent(data){const e=data.event||data,cfg=data.config||{},regs=data.registrations||[];document.getElementById('eventsList').classList.add('hidden');showHistoryButton(false);const view=document.getElementById('eventView');view.classList.remove('hidden');const back=ensureBackButton();if(!back.isConnected)view.prepend(back);back.classList.toggle('hidden',directEventMode);document.getElementById('eventTitle').textContent=e.title||e.name||'Gara';document.getElementById('eventDescription').textContent=e.description||'';startHeroCountdown(e.registration_deadline);renderQuickMeta(e,cfg);renderLocation(cfg);renderProgress(regs);renderInfo(cfg);renderRaceDays(e,cfg);renderCategoryDeadlines(e,cfg);renderDocuments(cfg);renderFilters(regs);renderStats(regs);renderRegistrationFees(cfg);renderRegistrations(regs,cfg);renderConfirmed(regs,cfg);renderPayment(null)}
+function renderEvent(data){const e=data.event||data,cfg=data.config||{},regs=data.registrations||[];document.getElementById('eventsList').classList.add('hidden');showHistoryButton(false);const view=document.getElementById('eventView');view.classList.remove('hidden');const back=ensureBackButton();if(!back.isConnected)view.prepend(back);back.classList.toggle('hidden',directEventMode);document.getElementById('eventTitle').textContent=e.title||e.name||'Gara';document.getElementById('eventDescription').textContent=e.description||'';startHeroCountdown(e.registration_deadline);renderQuickMeta(e,cfg);renderLocation(cfg);renderProgress(regs);renderInfo(cfg);renderRaceDays(e,cfg);renderCategoryDeadlines(e,cfg);renderDocuments(cfg);renderFilters(regs);renderStats(regs);renderRegistrations(regs,cfg);renderConfirmed(regs,cfg);renderPayment(null)}
 function renderQuickMeta(e,cfg){const box=document.getElementById('eventQuickMeta');box.replaceChildren();const entries=[];if(e.season_name)entries.push(['fa-calendar-days','Stagione',e.season_name]);if(e.registration_deadline)entries.push(['fa-clock','Scadenza',formatDate(e.registration_deadline)]);const active=e.is_published!==false&&!e.is_archived;entries.push(['fa-circle-check','Stato',active?'Aperta':'Chiusa']);entries.forEach(([icon,label,value])=>{const d=document.createElement('div');d.className='quick-meta-chip';const i=document.createElement('i');i.className=`fas ${icon}`;i.setAttribute('aria-hidden','true');const span=document.createElement('span'),small=document.createElement('small'),strong=document.createElement('strong');small.textContent=label;strong.textContent=value;span.append(small,strong);d.append(i,span);box.append(d)})}
 function renderLocation(cfg){const box=document.getElementById('eventLocationBox');if(!box)return;box.replaceChildren();const place=typeof cfg.event_location==='string'?cfg.event_location.trim():'';if(!place){box.classList.add('hidden');return}let mapUrl='',configured=typeof cfg.event_maps_url==='string'?cfg.event_maps_url.trim():'';try{if(configured){const url=new URL(configured,location.href);if(['http:','https:'].includes(url.protocol))mapUrl=url.href}}catch{}if(!mapUrl)mapUrl=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;const heading=document.createElement('div');heading.className='event-location-heading';const icon=document.createElement('i');icon.className='fas fa-location-dot';icon.setAttribute('aria-hidden','true');const copy=document.createElement('div'),label=document.createElement('span'),value=document.createElement('strong');label.textContent='POSIZIONE GARA';value.textContent=place;copy.append(label,value);heading.append(icon,copy);const link=document.createElement('a');link.className='event-location-link';link.href=mapUrl;link.target='_blank';link.rel='noopener noreferrer';link.innerHTML='<i class="fas fa-map-location-dot" aria-hidden="true"></i> Apri su Google Maps';box.append(heading,link);box.classList.remove('hidden')}
 function renderProgress(regs){const box=document.getElementById('eventProgress');if(!box)return;const yes=regs.filter(r=>r.status==='yes').length,no=regs.filter(r=>r.status==='no').length,total=regs.length,done=yes+no,pct=total?Math.round(done/total*100):0;box.innerHTML=`<div class="progress-copy"><span>Risposte ricevute</span><strong>${done}/${total}</strong></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>`}
@@ -83,47 +83,6 @@ function renderRaceDays(e,cfg){const box=document.getElementById('raceDaysBox');
 function renderCategoryDeadlines(e,cfg){const box=document.getElementById('categoryDeadlinesBox');box.replaceChildren();const deadlines=cfg.category_deadlines||{};const entries=Object.entries(deadlines).filter(([,v])=>v);if(!entries.length){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Scadenze per categoria';box.append(h);entries.forEach(([cat,date])=>{const r=document.createElement('div');r.className='public-deadline-row';r.innerHTML=`<strong>${cat}</strong><span>${formatDate(date)}</span>`;box.append(r)})}
 function renderDocuments(cfg){renderDocs(cfg)}
 function renderFilters(regs){const sel=document.getElementById('categoryFilter'),old=sel.value;sel.innerHTML='<option value="">Tutte le categorie</option>';[...new Set(regs.map(r=>r.category).filter(Boolean))].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.append(o)});sel.value=old}
-function renderRegistrationFees(cfg){
-  const box=document.getElementById('registrationFeesBox');
-  if(!box)return;
-  box.replaceChildren();
-  box.classList.remove('hidden');
-  const heading=document.createElement('h2');
-  heading.textContent='Quote di iscrizione';
-  box.append(heading);
-  const visible=cfg.show_category_costs!==false;
-  const message=document.createElement('p');
-  message.className='registration-fees-message';
-  message.textContent=visible?'Iscrizione a carico dell’atleta':'Iscrizione a carico della società';
-  box.append(message);
-  if(!visible)return;
-  const costs=cfg.category_costs&&typeof cfg.category_costs==='object'?cfg.category_costs:{};
-  const entries=Object.entries(costs)
-    .map(([category,value])=>[category,Number(value)])
-    .filter(([,value])=>Number.isFinite(value)&&value>0)
-    .sort((a,b)=>a[0].localeCompare(b[0],'it'));
-  if(!entries.length)return;
-  const details=document.createElement('details');
-  details.className='registration-fees-details';
-  const summary=document.createElement('summary');
-  summary.textContent='Visualizza quote';
-  details.append(summary);
-  const list=document.createElement('div');
-  list.className='registration-fees-list';
-  entries.forEach(([category,value])=>{
-    const row=document.createElement('div');
-    row.className='registration-fee-row';
-    const name=document.createElement('strong');
-    name.textContent=category;
-    const amount=document.createElement('span');
-    amount.textContent=value.toFixed(2)+' €';
-    row.append(name,amount);
-    list.append(row);
-  });
-  details.append(list);
-  box.append(details);
-}
-
 function renderStats(regs){const box=document.getElementById('stats');box.replaceChildren();[['yes','✓','Confermati'],['no','×','Non partecipano'],['pending','?','Da definire']].forEach(([status,icon,label])=>{const n=regs.filter(r=>r.status===status).length,d=document.createElement('div');d.className=`stat stat-${status}`;d.innerHTML=`<span class="stat-icon">${icon}</span><div><strong>${n}</strong><span>${label}</span></div>`;box.append(d)})}
 function visible(r){const q=document.getElementById('search').value.trim().toLowerCase(),c=document.getElementById('categoryFilter').value;return (!q||`${r.full_name} ${r.category}`.toLowerCase().includes(q))&&(!c||r.category===c)}
 function quotaFor(r,cfg){const costs=cfg.category_costs||{};const n=Number(costs[r.category]??0);return Number.isFinite(n)?n:0}
