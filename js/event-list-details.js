@@ -101,13 +101,17 @@ function openRegistrationDialog(event,registrations){
   const input=dialog.querySelector('input');
   const results=dialog.querySelector('.quick-registration-results');
   const state=dialog.querySelector('.quick-registration-state');
+  const help=dialog.querySelector('.quick-registration-help');
   const confirmButton=dialog.querySelector('.quick-registration-confirm');
   let selected=null;
   const render=()=>{
     const query=input.value.trim().toLocaleLowerCase('it');
     results.replaceChildren();
     results.hidden=false;
+    results.style.removeProperty('display');
     input.closest('.quick-registration-label').hidden=false;
+    input.closest('.quick-registration-label').style.removeProperty('display');
+    help.style.removeProperty('display');
     selected=null;confirmButton.disabled=true;state.classList.remove('is-confirmation');state.textContent='';
     if(!query)return;
     const matches=athletes.filter(a=>{
@@ -126,7 +130,10 @@ function openRegistrationDialog(event,registrations){
         input.value=athlete.full_name||'';
         results.replaceChildren();
         input.closest('.quick-registration-label').hidden=true;
+        input.closest('.quick-registration-label').style.setProperty('display','none','important');
         results.hidden=true;
+        results.style.setProperty('display','none','important');
+        help.style.setProperty('display','none','important');
         confirmButton.disabled=false;
         state.classList.add('is-confirmation');
         state.textContent='Confermi per '+(athlete.full_name||'atleta')+'?';
