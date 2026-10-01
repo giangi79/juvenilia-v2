@@ -92,6 +92,31 @@ function showQuickRegistrationCelebration(){
   },1550);
 }
 
+function openQuickRegistrationConfirmation(event,athlete){
+  const dialog=document.createElement('dialog');
+  dialog.className='quick-registration-dialog quick-registration-confirm-dialog';
+  dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">CONFERMA ISCRIZIONE</div><h2>Confermi l’iscrizione?</h2><p class="quick-registration-selected-name"></p><p class="quick-registration-state is-confirmation" aria-live="polite"></p><div class="quick-registration-actions"><button type="button" class="quick-registration-confirm"><i class="fas fa-check"></i> Conferma iscrizione</button><button value="cancel" class="quick-registration-cancel">Annulla</button></div></form>';
+  dialog.querySelector('.quick-registration-selected-name').textContent=athlete.full_name||'Atleta';
+  const state=dialog.querySelector('.quick-registration-state');
+  const confirmButton=dialog.querySelector('.quick-registration-confirm');
+  confirmButton.onclick=async()=>{
+    confirmButton.disabled=true;
+    state.textContent='Salvataggio iscrizione…';
+    const {error}=await db.rpc('v2_set_registration_status',{p_event_slug:event.slug,p_athlete_id:athlete.athlete_id,p_status:'yes'});
+    if(error){
+      state.textContent='Non è stato possibile confermare: '+error.message;
+      confirmButton.disabled=false;
+      return;
+    }
+    dialog.close();
+    showQuickRegistrationCelebration();
+    await enrichEventCards();
+  };
+  dialog.addEventListener('close',()=>dialog.remove());
+  document.body.append(dialog);
+  dialog.showModal();
+}
+
 function openRegistrationDialog(event,registrations){
   const athletes=(registrations||[]).slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''),'it'));
   const dialog=document.createElement('dialog');
@@ -126,17 +151,8 @@ function openRegistrationDialog(event,registrations){
       const details=document.createElement('span');details.textContent=[athlete.category,athlete.race_number!=null?'N. '+athlete.race_number:''].filter(Boolean).join(' · ');
       button.append(name,details);
       button.onclick=()=>{
-        selected=athlete;
-        input.value=athlete.full_name||'';
-        results.replaceChildren();
-        input.closest('.quick-registration-label').hidden=true;
-        input.closest('.quick-registration-label').style.setProperty('display','none','important');
-        results.hidden=true;
-        results.style.setProperty('display','none','important');
-        help.style.setProperty('display','none','important');
-        confirmButton.disabled=false;
-        state.classList.add('is-confirmation');
-        state.textContent='Confermi per '+(athlete.full_name||'atleta')+'?';
+        dialog.close();
+        openQuickRegistrationConfirmation(event,athlete);
       };
       results.append(button);
     });
