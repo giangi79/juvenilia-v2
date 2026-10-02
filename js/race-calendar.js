@@ -30,6 +30,7 @@ async function refresh(){
 }
 
 function showCalendar(){
+  if(location.hash.toLowerCase()!=='#calendario')history.replaceState({},'',location.pathname+'#calendario');
   $('eventsList')?.classList.add('hidden');
   $('eventView')?.classList.add('hidden');
   $('publicHistoryView')?.classList.add('hidden');
@@ -40,6 +41,7 @@ function showCalendar(){
 }
 
 function closeCalendar(){
+  history.replaceState({},'',location.pathname);
   $('raceCalendarView')?.classList.add('hidden');
   $('eventsList')?.classList.remove('hidden');
   $('eventTitle').innerHTML='<span>COMPETIZIONI</span> <strong>JUVENILIA</strong>';
@@ -103,5 +105,6 @@ function render(){
 function init(){
   $('openRaceCalendar')?.addEventListener('click',showCalendar);
   $('closeRaceCalendar')?.addEventListener('click',closeCalendar);
+  if(location.hash.toLowerCase()==='#calendario')showCalendar();
 }
 init();
