@@ -204,7 +204,11 @@ function renderCardRegistrationFees(card,config){
     const entries=Object.entries(costs)
       .map(([category,value])=>[category,Number(value)])
       .filter(([,value])=>Number.isFinite(value)&&value>0)
-      .sort((x,y)=>x[0].localeCompare(y[0],'it'));
+      .sort((x,y)=>{
+        const order=['GIOVANISSIMI','ESORDIENTI','R12','RAGAZZI','ALLIEVI','JUNIOR','SENIOR'];
+        const rank=value=>{const index=order.indexOf(String(value||'').trim().toUpperCase());return index<0?order.length:index};
+        return rank(x[0])-rank(y[0])||String(x[0]).localeCompare(String(y[0]),'it');
+      });
     if(entries.length){
       const details=document.createElement('details');
       const summary=document.createElement('summary');
