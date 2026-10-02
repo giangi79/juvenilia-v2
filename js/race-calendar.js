@@ -2,16 +2,25 @@ import { db } from './supabase.js';
 import { toast } from './ui.js';
 
 const $=id=>document.getElementById(id);
-let month=new Date();
-month.setDate(1);
 let entries=[];
-let admin=false;
 
 const parseDate=value=>value?new Date(value+'T12:00:00'):null;
-const isoDate=date=>date.toISOString().slice(0,10);
 const fmtDate=value=>parseDate(value)?.toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'})||'';
-const fmtRange=item=>item.end_date&&item.end_date!==item.start_date?fmtDate(item.start_date)+' – '+fmtDate(item.end_date):fmtDate(item.start_date);
-const monthTitle=date=>date.toLocaleDateString('it-IT',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
+const shortDate=value=>parseDate(value)?.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})||'';
+const fmtRange=item=>item.end_date&&item.end_date!==item.start_date?shortDate(item.start_date)+'–'+shortDate(item.end_date):shortDate(item.start_date);
+const monthLabel=value=>parseDate(value)?.toLocaleDateString('it-IT',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase())||'';
+const seasonLabel=()=>{
+  const now=new Date(),year=now.getFullYear(),start=now.getMonth()>=6?year:year-1;
+  return start+'/'+String(start+1).slice(-2);
+};
+const iconFor=type=>{
+  const text=String(type||'').toLocaleLowerCase('it');
+  if(/campionato|italiano/.test(text))return '🇮🇹';
+  if(/internazionale|europe|mondiale/.test(text))return '🌍';
+  if(/regionale/.test(text))return '🏅';
+  if(/raduno/.test(text))return '🛼';
+  return '🏆';
+};
 
 async function refresh(){
   const {data,error}=await db.from('v2_race_calendar').select('*').order('start_date',{ascending:true});
@@ -44,72 +53,64 @@ function closeCalendar(){
   $('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';
 }
 
-function eventOnDay(day){
-  const key=isoDate(day);
-  return entries.filter(item=>item.start_date===key||(item.end_date&&item.start_date<=key&&item.end_date>=key));
-}
-
 function render(){
-  const title=$('raceCalendarMonth');
-  const grid=$('raceCalendarGrid');
-  const list=$('raceCalendarList');
-  if(!title||!grid||!list)return;
-  title.textContent=monthTitle(month);
-  grid.replaceChildren();
-  const year=month.getFullYear(),index=month.getMonth();
-  const first=new Date(year,index,1);
-  const offset=(first.getDay()+6)%7;
-  const daysInMonth=new Date(year,index+1,0).getDate();
-  for(let i=0;i<offset;i++){const empty=document.createElement('div');empty.className='race-calendar-day empty';grid.append(empty)}
-  for(let day=1;day<=daysInMonth;day++){
-    const date=new Date(year,index,day);
-    const cell=document.createElement('div');
-    cell.className='race-calendar-day';
-    const num=document.createElement('strong');
-    num.textContent=String(day);
-    cell.append(num);
-    eventOnDay(date).slice(0,2).forEach(item=>{
-      const badge=document.createElement('span');
-      badge.className='race-calendar-badge';
-      badge.textContent=item.event_type||'Gara';
-      badge.title=item.title;
-      cell.append(badge);
-    });
-    grid.append(cell);
+  const host=$('raceCalendarSeason');
+  const title=$('raceCalendarSeasonTitle');
+  if(!host||!title)return;
+  title.textContent='Calendario agonistico '+seasonLabel();
+  host.replaceChildren();
+  const today=new Date();today.setHours(0,0,0,0);
+  const upcoming=entries.filter(item=>parseDate(item.end_date||item.start_date)>=today);
+  if(!upcoming.length){
+    const empty=document.createElement('p');
+    empty.className='muted';
+    empty.textContent='Nessuna gara futura inserita.';
+    host.append(empty);
+    return;
   }
-  list.replaceChildren();
-  const upcoming=entries.filter(item=>{
-    const end=parseDate(item.end_date||item.start_date);
-    const today=new Date();today.setHours(0,0,0,0);
-    return end>=today;
-  });
-  if(!upcoming.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='Nessuna gara futura inserita.';list.append(empty);return}
+  const grouped=new Map();
   upcoming.forEach(item=>{
-    const row=document.createElement('article');
-    row.className='race-calendar-entry';
-    const date=document.createElement('div');
-    date.className='race-calendar-entry-date';
-    date.textContent=fmtRange(item);
-    const body=document.createElement('div');
-    const type=document.createElement('span');
-    type.className='race-calendar-type';
-    type.textContent=item.event_type||'Gara';
-    const name=document.createElement('strong');
-    name.textContent=item.title;
-    body.append(type,name);
-    if(item.location){const where=document.createElement('small');where.textContent=item.location;body.append(where)}
-    if(item.notes){const note=document.createElement('small');note.textContent=item.notes;body.append(note)}
-    row.append(date,body);
-    list.append(row);
+    const key=(item.start_date||'').slice(0,7);
+    if(!grouped.has(key))grouped.set(key,{label:monthLabel(item.start_date),items:[]});
+    grouped.get(key).items.push(item);
+  });
+  [...grouped.values()].forEach(group=>{
+    const column=document.createElement('section');
+    column.className='season-calendar-month';
+    const heading=document.createElement('h3');
+    heading.textContent=group.label;
+    column.append(heading);
+    group.items.forEach(item=>{
+      const card=document.createElement('article');
+      card.className='season-calendar-event';
+      const date=document.createElement('div');
+      date.className='season-calendar-date';
+      date.textContent=fmtRange(item);
+      const icon=document.createElement('span');
+      icon.className='season-calendar-icon';
+      icon.textContent=iconFor(item.event_type);
+      const body=document.createElement('div');
+      body.className='season-calendar-body';
+      const name=document.createElement('strong');
+      name.textContent=item.title;
+      const place=document.createElement('em');
+      place.textContent=item.location||item.event_type||'Gara';
+      const type=document.createElement('span');
+      type.className='season-calendar-type';
+      type.textContent=item.event_type||'Gara';
+      body.append(name,place,type);
+      if(item.notes){const note=document.createElement('small');note.textContent=item.notes;body.append(note)}
+      card.append(date,icon,body);
+      column.append(card);
+    });
+    host.append(column);
   });
 }
 
 async function setupAdminForm(){
   const host=$('raceCalendarAdmin');
   if(!host)return;
-  admin=await checkAdmin();
-  host.classList.toggle('hidden',!admin);
-  if(!admin)return;
+  host.classList.toggle('hidden',!(await checkAdmin()));
   const form=$('raceCalendarForm');
   form?.addEventListener('submit',async event=>{
     event.preventDefault();
@@ -122,12 +123,8 @@ async function setupAdminForm(){
     const submit=form.querySelector('button[type="submit"]');
     submit.disabled=true;
     const {error}=await db.from('v2_race_calendar').insert({
-      title,
-      event_type:String(data.get('event_type')||'Gara'),
-      start_date:startDate,
-      end_date:endDate||null,
-      location:String(data.get('location')||'').trim()||null,
-      notes:String(data.get('notes')||'').trim()||null
+      title,event_type:String(data.get('event_type')||'Gara'),start_date:startDate,end_date:endDate||null,
+      location:String(data.get('location')||'').trim()||null,notes:String(data.get('notes')||'').trim()||null
     });
     submit.disabled=false;
     if(error){toast('Non è stato possibile salvare: '+error.message);return}
@@ -140,8 +137,6 @@ async function setupAdminForm(){
 function init(){
   $('openRaceCalendar')?.addEventListener('click',showCalendar);
   $('closeRaceCalendar')?.addEventListener('click',closeCalendar);
-  $('raceCalendarPrev')?.addEventListener('click',()=>{month.setMonth(month.getMonth()-1);render()});
-  $('raceCalendarNext')?.addEventListener('click',()=>{month.setMonth(month.getMonth()+1);render()});
   setupAdminForm();
 }
 init();
