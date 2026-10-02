@@ -29,13 +29,6 @@ async function refresh(){
   render();
 }
 
-async function checkAdmin(){
-  const {data:{user}}=await db.auth.getUser();
-  if(!user)return false;
-  const {data,error}=await db.rpc('v2_is_admin');
-  return !error&&data===true;
-}
-
 function showCalendar(){
   $('eventsList')?.classList.add('hidden');
   $('eventView')?.classList.add('hidden');
@@ -107,36 +100,8 @@ function render(){
   });
 }
 
-async function setupAdminForm(){
-  const host=$('raceCalendarAdmin');
-  if(!host)return;
-  host.classList.toggle('hidden',!(await checkAdmin()));
-  const form=$('raceCalendarForm');
-  form?.addEventListener('submit',async event=>{
-    event.preventDefault();
-    const data=new FormData(form);
-    const title=String(data.get('title')||'').trim();
-    const startDate=String(data.get('start_date')||'');
-    const endDate=String(data.get('end_date')||'');
-    if(!title||!startDate){toast('Inserisci almeno nome e data della gara');return}
-    if(endDate&&endDate<startDate){toast('La data finale non può precedere quella iniziale');return}
-    const submit=form.querySelector('button[type="submit"]');
-    submit.disabled=true;
-    const {error}=await db.from('v2_race_calendar').insert({
-      title,event_type:String(data.get('event_type')||'Gara'),start_date:startDate,end_date:endDate||null,
-      location:String(data.get('location')||'').trim()||null,notes:String(data.get('notes')||'').trim()||null
-    });
-    submit.disabled=false;
-    if(error){toast('Non è stato possibile salvare: '+error.message);return}
-    form.reset();
-    toast('Gara aggiunta al calendario');
-    refresh();
-  });
-}
-
 function init(){
   $('openRaceCalendar')?.addEventListener('click',showCalendar);
   $('closeRaceCalendar')?.addEventListener('click',closeCalendar);
-  setupAdminForm();
 }
 init();
