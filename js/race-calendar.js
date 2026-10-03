@@ -24,13 +24,13 @@ const dateParts=item=>{
 };
 const typeInfo=type=>{
   const text=String(type||'').toLocaleLowerCase('it');
-  if(/internazionale|europe|mondiale/.test(text))return {key:'international',icon:'INT'};
-  if(/regionale/.test(text))return {key:'regional',icon:'REG'};
-  if(/nazionale|italiano/.test(text))return {key:'national',icon:'IT'};
-  if(/raduno/.test(text))return {key:'meeting',icon:'RAD'};
-  if(/amichevole/.test(text))return {key:'friendly',icon:'AM'};
-  if(/trofeo/.test(text))return {key:'trophy',icon:'TRO'};
-  return {key:'race',icon:'GARA'};
+  if(/internazionale|europe|mondiale/.test(text))return {key:'international',icon:'fa-earth-europe'};
+  if(/regionale/.test(text))return {key:'regional',icon:'fa-medal'};
+  if(/nazionale|italiano/.test(text))return {key:'national',icon:'italy-flag'};
+  if(/raduno/.test(text))return {key:'meeting',icon:'fa-person-skating'};
+  if(/amichevole/.test(text))return {key:'friendly',icon:'fa-handshake'};
+  if(/trofeo/.test(text))return {key:'trophy',icon:'fa-trophy'};
+  return {key:'race',icon:'fa-flag-checkered'};
 };
 
 async function refresh(){
@@ -100,7 +100,17 @@ function render(){
       date.append(days,month);
       const icon=document.createElement('span');
       icon.className='season-calendar-icon type-'+kind.key;
-      icon.textContent=kind.icon;
+      if(kind.icon==='italy-flag'){
+        const flag=document.createElement('span');
+        flag.className='season-calendar-italy-flag';
+        flag.setAttribute('aria-label','Italia');
+        icon.append(flag);
+      }else{
+        const symbol=document.createElement('i');
+        symbol.className='fas '+kind.icon;
+        symbol.setAttribute('aria-hidden','true');
+        icon.append(symbol);
+      }
       const body=document.createElement('div');
       body.className='season-calendar-body';
       const name=document.createElement('strong');
