@@ -13,13 +13,24 @@ const seasonLabel=()=>{
   const now=new Date(),year=now.getFullYear(),start=now.getMonth()>=6?year:year-1;
   return start+'/'+String(start+1).slice(-2);
 };
-const iconFor=type=>{
+const shortMonth=value=>parseDate(value)?.toLocaleDateString('it-IT',{month:'short'}).replace('.','').toUpperCase()||'';
+const dateParts=item=>{
+  const start=parseDate(item.start_date),end=parseDate(item.end_date||item.start_date);
+  const day=value=>String(value.getDate()).padStart(2,'0');
+  if(start.getMonth()===end.getMonth()&&start.getFullYear()===end.getFullYear()){
+    return {days:start.getTime()===end.getTime()?day(start):day(start)+'–'+day(end),month:shortMonth(item.start_date)};
+  }
+  return {days:day(start)+' '+shortMonth(item.start_date),month:'→ '+day(end)+' '+shortMonth(item.end_date||item.start_date)};
+};
+const typeInfo=type=>{
   const text=String(type||'').toLocaleLowerCase('it');
-  if(/campionato|italiano/.test(text))return '🇮🇹';
-  if(/internazionale|europe|mondiale/.test(text))return '🌍';
-  if(/regionale/.test(text))return '🏅';
-  if(/raduno/.test(text))return '🛼';
-  return '🏆';
+  if(/internazionale|europe|mondiale/.test(text))return {key:'international',icon:'INT'};
+  if(/regionale/.test(text))return {key:'regional',icon:'REG'};
+  if(/nazionale|italiano/.test(text))return {key:'national',icon:'IT'};
+  if(/raduno/.test(text))return {key:'meeting',icon:'RAD'};
+  if(/amichevole/.test(text))return {key:'friendly',icon:'AM'};
+  if(/trofeo/.test(text))return {key:'trophy',icon:'TRO'};
+  return {key:'race',icon:'GARA'};
 };
 
 async function refresh(){
@@ -76,14 +87,20 @@ function render(){
     heading.textContent=group.label;
     column.append(heading);
     group.items.forEach(item=>{
+      const kind=typeInfo(item.event_type);
       const card=document.createElement('article');
-      card.className='season-calendar-event';
+      card.className='season-calendar-event type-'+kind.key;
       const date=document.createElement('div');
       date.className='season-calendar-date';
-      date.textContent=fmtRange(item);
+      const dateInfo=dateParts(item);
+      const days=document.createElement('strong');
+      days.textContent=dateInfo.days;
+      const month=document.createElement('span');
+      month.textContent=dateInfo.month;
+      date.append(days,month);
       const icon=document.createElement('span');
-      icon.className='season-calendar-icon';
-      icon.textContent=iconFor(item.event_type);
+      icon.className='season-calendar-icon type-'+kind.key;
+      icon.textContent=kind.icon;
       const body=document.createElement('div');
       body.className='season-calendar-body';
       const name=document.createElement('strong');
