@@ -171,8 +171,7 @@ async function downloadCalendarPdf(){
   const columns=[[],[],[]];
   [...groups.values()].forEach((group,index)=>columns[index%3].push(group));
   const logo=await logoDataUrl();
-  doc.setFillColor(23,59,104);doc.rect(0,0,width,13,'F');
-  if(logo)doc.addImage(logo,'PNG',12,2,49,8);
+  if(logo)doc.addImage(logo,'PNG',12,5,49,8);
   doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('CALENDARIO AGONISTICO '+seasonLabel(),12,23);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(88,104,120);
   doc.text('Appuntamenti futuri comunicati alla squadra',12,28);
