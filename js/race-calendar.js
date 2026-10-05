@@ -37,6 +37,13 @@ async function refresh(){
   const {data,error}=await db.from('v2_race_calendar').select('*').order('start_date',{ascending:true});
   if(error){toast('Non è stato possibile caricare il calendario: '+error.message);return}
   entries=data||[];
+  const ids=entries.map(item=>item.id).filter(Boolean);
+  if(ids.length){
+    const {data:categoryRows}=await db.from('v2_event_config')
+      .select('event_id,value').eq('key','allowed_categories').in('event_id',ids);
+    const byEvent=new Map((categoryRows||[]).map(row=>[row.event_id,row.value]));
+    entries=entries.map(item=>({...item,allowed_categories:byEvent.get(item.id)??item.allowed_categories??item.categories??null}));
+  }
   render();
 }
 
@@ -120,7 +127,11 @@ function render(){
       const type=document.createElement('span');
       type.className='season-calendar-type';
       type.textContent=item.event_type||'Gara';
-      body.append(name,place,type);
+      const categories=document.createElement('span');
+      categories.className='season-calendar-type';
+      const categoryList=Array.isArray(item.allowed_categories)?item.allowed_categories:[];
+      categories.textContent='Categorie: '+(categoryList.length?categoryList.join(', '):'tutte');
+      body.append(name,place,type,categories);
       if(item.notes){const note=document.createElement('small');note.textContent=item.notes;body.append(note)}
       card.append(date,icon,body);
       column.append(card);
@@ -187,7 +198,11 @@ async function downloadCalendarPdf(){
         const kind=typeInfo(item.event_type),color=pdfColor(kind.key),dateInfo=dateParts(item);
         const title=doc.splitTextToSize(String(item.title||'Gara'),columnWidth-30).slice(0,2);
         const details=doc.splitTextToSize([item.event_type,item.location].filter(Boolean).join(' · '),columnWidth-30).slice(0,1);
-        const rowHeight=Math.max(12,6+title.length*3.1+(details.length?2.8:0));
+        const categoryText=Array.isArray(item.allowed_categories)&&item.allowed_categories.length
+          ?'Categorie: '+item.allowed_categories.join(', ')
+          :'Categorie: tutte';
+        const categoryLines=doc.splitTextToSize(categoryText,columnWidth-30).slice(0,2);
+        const rowHeight=Math.max(14,6+title.length*3.1+(details.length?2.8:0)+categoryLines.length*2.6);
         if(y+rowHeight>height-10)return;
         doc.setFillColor(247,249,251);doc.roundedRect(x,y-2,columnWidth,rowHeight,1,1,'F');
         doc.setFillColor(...color);doc.roundedRect(x,y-2,3.2,rowHeight,1,1,'F');
@@ -197,6 +212,8 @@ async function downloadCalendarPdf(){
         doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(7);
         doc.text(title,x+24,y+1.8);
         if(details.length){doc.setFont('helvetica','normal');doc.setFontSize(5.8);doc.setTextColor(88,104,120);doc.text(details,x+24,y+2.3+title.length*3.1);}
+        doc.setFont('helvetica','normal');doc.setFontSize(5.5);doc.setTextColor(88,104,120);
+        doc.text(categoryLines,x+24,y+2.3+title.length*3.1+(details.length?2.8:0));
         y+=rowHeight+2;
       });
       y+=3;
