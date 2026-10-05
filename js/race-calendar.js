@@ -141,7 +141,21 @@ function pdfColor(key){
   })[key]||[72,168,104];
 }
 
-function downloadCalendarPdf(){
+async function logoDataUrl(){
+  try{
+    const response=await fetch('assets/juvenilia-logo-orizzontale.png');
+    if(!response.ok)throw new Error('logo non disponibile');
+    const blob=await response.blob();
+    return await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result);
+      reader.onerror=reject;
+      reader.readAsDataURL(blob);
+    });
+  }catch{return null}
+}
+
+async function downloadCalendarPdf(){
   const JsPDF=window.jspdf?.jsPDF;
   if(!JsPDF){toast('Il generatore PDF non è ancora pronto. Riprova tra un istante.');return}
   const items=upcomingEntries();
@@ -156,9 +170,10 @@ function downloadCalendarPdf(){
   });
   const columns=[[],[],[]];
   [...groups.values()].forEach((group,index)=>columns[index%3].push(group));
+  const logo=await logoDataUrl();
   doc.setFillColor(23,59,104);doc.rect(0,0,width,13,'F');
-  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('JUVENILIA RACING TEAM',12,8.3);
-  doc.setTextColor(22,32,42);doc.setFontSize(18);doc.text('CALENDARIO AGONISTICO '+seasonLabel(),12,23);
+  if(logo)doc.addImage(logo,'PNG',12,2,49,8);
+  doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('CALENDARIO AGONISTICO '+seasonLabel(),12,23);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(88,104,120);
   doc.text('Appuntamenti futuri comunicati alla squadra',12,28);
   const gap=6,left=10,top=36,columnWidth=(width-left*2-gap*2)/3;
@@ -201,7 +216,7 @@ function init(){
     button.disabled=true;
     await refresh();
     button.disabled=false;
-    downloadCalendarPdf();
+    await downloadCalendarPdf();
   });
   if(location.hash.toLowerCase()==='#calendario')showCalendar();
 }
