@@ -147,47 +147,49 @@ function downloadCalendarPdf(){
   const items=upcomingEntries();
   if(!items.length){toast('Non ci sono gare future da scaricare.');return}
   const doc=new JsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  const width=doc.internal.pageSize.getWidth();
-  let y=17;
-  const nextPage=()=>{
-    doc.addPage();y=17;
-    doc.setFillColor(23,59,104);doc.rect(0,0,width,11,'F');
-    doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text('JUVENILIA RACING TEAM',12,7.3);
-  };
-  doc.setFillColor(23,59,104);doc.rect(0,0,width,11,'F');
-  doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text('JUVENILIA RACING TEAM',12,7.3);
-  doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(20);
-  doc.text('CALENDARIO AGONISTICO '+seasonLabel(),12,y);
-  y+=8;doc.setFont('helvetica','normal');doc.setFontSize(10);
-  doc.setTextColor(88,104,120);doc.text('Appuntamenti futuri comunicati alla squadra',12,y);y+=9;
-  let activeMonth='';
+  const width=doc.internal.pageSize.getWidth(),height=doc.internal.pageSize.getHeight();
+  const groups=new Map();
   items.forEach(item=>{
-    const month=monthLabel(item.start_date);
-    if(month!==activeMonth){
-      if(y>178)nextPage();
-      activeMonth=month;
-      doc.setFillColor(23,105,170);doc.roundedRect(12,y-5,48,7,1,1,'F');
-      doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(month.toUpperCase(),15,y);
-      y+=7;
-    }
-    if(y>184)nextPage();
-    const kind=typeInfo(item.event_type),color=pdfColor(kind.key);
-    doc.setFillColor(247,249,251);doc.roundedRect(12,y-3,width-24,15,1.5,1.5,'F');
-    doc.setFillColor(...color);doc.roundedRect(12,y-3,5,15,1.5,1.5,'F');
-    doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(10);
-    doc.text(fmtRange(item),21,y+2);
-    doc.setFontSize(10);doc.text(item.title||'Gara',51,y+2);
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(88,104,120);
-    const details=[item.event_type,item.location].filter(Boolean).join(' · ');
-    doc.text(details,51,y+7);
-    if(item.notes){doc.setFontSize(7.5);doc.text(item.notes,51,y+10.5,{maxWidth:width-67});}
-    y+=18;
+    const key=(item.start_date||'').slice(0,7);
+    if(!groups.has(key))groups.set(key,{label:monthLabel(item.start_date),items:[]});
+    groups.get(key).items.push(item);
   });
-  const pages=doc.getNumberOfPages();
-  for(let page=1;page<=pages;page++){
-    doc.setPage(page);doc.setTextColor(100,110,120);doc.setFontSize(7);
-    doc.text('Calendario Juvenilia · Pagina '+page+' di '+pages,width-12,203,{align:'right'});
-  }
+  const columns=[[],[],[]];
+  [...groups.values()].forEach((group,index)=>columns[index%3].push(group));
+  doc.setFillColor(23,59,104);doc.rect(0,0,width,13,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('JUVENILIA RACING TEAM',12,8.3);
+  doc.setTextColor(22,32,42);doc.setFontSize(18);doc.text('CALENDARIO AGONISTICO '+seasonLabel(),12,23);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(88,104,120);
+  doc.text('Appuntamenti futuri comunicati alla squadra',12,28);
+  const gap=6,left=10,top=36,columnWidth=(width-left*2-gap*2)/3;
+  columns.forEach((column,columnIndex)=>{
+    let y=top,x=left+columnIndex*(columnWidth+gap);
+    column.forEach(group=>{
+      doc.setFillColor(23,105,170);doc.roundedRect(x,y-4,columnWidth,6,1,1,'F');
+      doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(7.4);
+      doc.text(group.label.toUpperCase(),x+3,y);
+      y+=5;
+      group.items.forEach(item=>{
+        const kind=typeInfo(item.event_type),color=pdfColor(kind.key),dateInfo=dateParts(item);
+        const title=doc.splitTextToSize(String(item.title||'Gara'),columnWidth-30).slice(0,2);
+        const details=doc.splitTextToSize([item.event_type,item.location].filter(Boolean).join(' · '),columnWidth-30).slice(0,1);
+        const rowHeight=Math.max(12,6+title.length*3.1+(details.length?2.8:0));
+        if(y+rowHeight>height-10)return;
+        doc.setFillColor(247,249,251);doc.roundedRect(x,y-2,columnWidth,rowHeight,1,1,'F');
+        doc.setFillColor(...color);doc.roundedRect(x,y-2,3.2,rowHeight,1,1,'F');
+        doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(7.2);
+        doc.text(dateInfo.days,x+5,y+2);
+        doc.setFontSize(5.8);doc.setTextColor(88,104,120);doc.text(dateInfo.month,x+5,y+5.2);
+        doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(7);
+        doc.text(title,x+24,y+1.8);
+        if(details.length){doc.setFont('helvetica','normal');doc.setFontSize(5.8);doc.setTextColor(88,104,120);doc.text(details,x+24,y+2.3+title.length*3.1);}
+        y+=rowHeight+2;
+      });
+      y+=3;
+    });
+  });
+  doc.setTextColor(100,110,120);doc.setFontSize(6.5);
+  doc.text('Calendario Juvenilia · pagina unica A4 orizzontale',width-12,height-5,{align:'right'});
   doc.save('Calendario_Juvenilia_'+seasonLabel().replace('/','-')+'.pdf');
 }
 
