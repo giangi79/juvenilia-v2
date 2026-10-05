@@ -187,7 +187,9 @@ async function downloadCalendarPdf(){
         const kind=typeInfo(item.event_type),color=pdfColor(kind.key),dateInfo=dateParts(item);
         const title=doc.splitTextToSize(String(item.title||'Gara'),columnWidth-30).slice(0,2);
         const details=doc.splitTextToSize([item.event_type,item.location].filter(Boolean).join(' · '),columnWidth-30).slice(0,1);
-        const rowHeight=Math.max(12,6+title.length*3.1+(details.length?2.8:0));
+        const notes=String(item.notes||'').trim();
+        const noteLines=notes?doc.splitTextToSize(notes,columnWidth-30).slice(0,3):[];
+        const rowHeight=Math.max(12,6+title.length*3.1+(details.length?2.8:0)+noteLines.length*2.6);
         if(y+rowHeight>height-10)return;
         doc.setFillColor(247,249,251);doc.roundedRect(x,y-2,columnWidth,rowHeight,1,1,'F');
         doc.setFillColor(...color);doc.roundedRect(x,y-2,3.2,rowHeight,1,1,'F');
@@ -197,6 +199,7 @@ async function downloadCalendarPdf(){
         doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(7);
         doc.text(title,x+24,y+1.8);
         if(details.length){doc.setFont('helvetica','normal');doc.setFontSize(5.8);doc.setTextColor(88,104,120);doc.text(details,x+24,y+2.3+title.length*3.1);}
+        if(noteLines.length){doc.setFont('helvetica','normal');doc.setFontSize(5.5);doc.setTextColor(88,104,120);doc.text(noteLines,x+24,y+2.3+title.length*3.1+(details.length?2.8:0));}
         y+=rowHeight+2;
       });
       y+=3;
