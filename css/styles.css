@@ -4329,3 +4329,12 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
     white-space:normal!important;
   }
 }
+
+
+/* Calendario: su mobile il titolo resta sotto ai comandi della testata. */
+@media (max-width:760px){
+  .hero > div:first-child{padding-top:58px}
+}
+@media (max-width:560px){
+  .hero > div:first-child{padding-top:172px}
+}
