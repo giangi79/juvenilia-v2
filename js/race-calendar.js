@@ -129,9 +129,78 @@ function render(){
   });
 }
 
+function upcomingEntries(){
+  const today=new Date();today.setHours(0,0,0,0);
+  return entries.filter(item=>parseDate(item.end_date||item.start_date)>=today);
+}
+
+function pdfColor(key){
+  return ({
+    national:[216,71,63],international:[86,105,201],regional:[27,156,181],
+    trophy:[214,154,39],meeting:[149,92,197],friendly:[219,107,159],race:[72,168,104]
+  })[key]||[72,168,104];
+}
+
+function downloadCalendarPdf(){
+  const JsPDF=window.jspdf?.jsPDF;
+  if(!JsPDF){toast('Il generatore PDF non è ancora pronto. Riprova tra un istante.');return}
+  const items=upcomingEntries();
+  if(!items.length){toast('Non ci sono gare future da scaricare.');return}
+  const doc=new JsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const width=doc.internal.pageSize.getWidth();
+  let y=17;
+  const nextPage=()=>{
+    doc.addPage();y=17;
+    doc.setFillColor(23,59,104);doc.rect(0,0,width,11,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text('JUVENILIA RACING TEAM',12,7.3);
+  };
+  doc.setFillColor(23,59,104);doc.rect(0,0,width,11,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(9);doc.text('JUVENILIA RACING TEAM',12,7.3);
+  doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(20);
+  doc.text('CALENDARIO AGONISTICO '+seasonLabel(),12,y);
+  y+=8;doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.setTextColor(88,104,120);doc.text('Appuntamenti futuri comunicati alla squadra',12,y);y+=9;
+  let activeMonth='';
+  items.forEach(item=>{
+    const month=monthLabel(item.start_date);
+    if(month!==activeMonth){
+      if(y>178)nextPage();
+      activeMonth=month;
+      doc.setFillColor(23,105,170);doc.roundedRect(12,y-5,48,7,1,1,'F');
+      doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(month.toUpperCase(),15,y);
+      y+=7;
+    }
+    if(y>184)nextPage();
+    const kind=typeInfo(item.event_type),color=pdfColor(kind.key);
+    doc.setFillColor(247,249,251);doc.roundedRect(12,y-3,width-24,15,1.5,1.5,'F');
+    doc.setFillColor(...color);doc.roundedRect(12,y-3,5,15,1.5,1.5,'F');
+    doc.setTextColor(22,32,42);doc.setFont('helvetica','bold');doc.setFontSize(10);
+    doc.text(fmtRange(item),21,y+2);
+    doc.setFontSize(10);doc.text(item.title||'Gara',51,y+2);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(88,104,120);
+    const details=[item.event_type,item.location].filter(Boolean).join(' · ');
+    doc.text(details,51,y+7);
+    if(item.notes){doc.setFontSize(7.5);doc.text(item.notes,51,y+10.5,{maxWidth:width-67});}
+    y+=18;
+  });
+  const pages=doc.getNumberOfPages();
+  for(let page=1;page<=pages;page++){
+    doc.setPage(page);doc.setTextColor(100,110,120);doc.setFontSize(7);
+    doc.text('Calendario Juvenilia · Pagina '+page+' di '+pages,width-12,203,{align:'right'});
+  }
+  doc.save('Calendario_Juvenilia_'+seasonLabel().replace('/','-')+'.pdf');
+}
+
 function init(){
   $('openRaceCalendar')?.addEventListener('click',showCalendar);
   $('closeRaceCalendar')?.addEventListener('click',closeCalendar);
+  $('downloadRaceCalendar')?.addEventListener('click',async()=>{
+    const button=$('downloadRaceCalendar');
+    button.disabled=true;
+    await refresh();
+    button.disabled=false;
+    downloadCalendarPdf();
+  });
   if(location.hash.toLowerCase()==='#calendario')showCalendar();
 }
 init();
