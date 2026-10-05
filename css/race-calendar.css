@@ -1,7 +1,6 @@
 .race-calendar-view{margin-top:18px}.race-calendar-heading h2{margin:4px 0}.race-calendar-admin{margin:0 0 16px}.race-calendar-admin summary{cursor:pointer;font-weight:850;color:#9fe9f4}.race-calendar-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.race-calendar-form label{display:grid;gap:5px;font-weight:750}.race-calendar-form .wide{grid-column:1/-1}.race-calendar-form button{justify-self:start}.season-calendar-panel{padding:18px}.season-calendar-title{margin:0 0 16px;font-size:1.2rem;text-transform:uppercase;letter-spacing:.02em}.season-calendar-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.season-calendar-month{min-width:0}.season-calendar-month h3{display:inline-block;margin:0 0 10px;padding:4px 8px;background:#1769aa;color:#fff;font-size:.78rem;text-transform:uppercase}.season-calendar-event{--calendar-accent:#48a868;display:grid;grid-template-columns:66px 43px minmax(0,1fr);gap:7px;align-items:stretch;margin:0 0 10px;border:1px solid #496075;border-left:5px solid var(--calendar-accent);background:#203246;color:#fff}.season-calendar-event.type-national{--calendar-accent:#d8473f}.season-calendar-event.type-international{--calendar-accent:#5669c9}.season-calendar-event.type-regional{--calendar-accent:#1b9cb5}.season-calendar-event.type-trophy{--calendar-accent:#d69a27}.season-calendar-event.type-meeting{--calendar-accent:#955cc5}.season-calendar-event.type-friendly{--calendar-accent:#db6b9f}.season-calendar-date{display:grid;align-content:center;justify-items:center;gap:2px;text-align:center;padding:6px 3px;border-right:3px solid var(--calendar-accent);line-height:1.05}.season-calendar-date strong{font-size:.85rem;letter-spacing:-.03em}.season-calendar-date span{font-size:.61rem;font-weight:850;color:#b8d4e5}.season-calendar-icon{display:grid;place-items:center;padding:4px;border-right:3px solid var(--calendar-accent);font-size:1.16rem;color:#fff}.season-calendar-italy-flag{display:block;width:27px;height:18px;border:1px solid rgba(255,255,255,.7);border-radius:2px;background:linear-gradient(90deg,#16864c 0 33.33%,#fff 33.33% 66.66%,#d64747 66.66%);box-shadow:0 1px 3px rgba(0,0,0,.35)}.season-calendar-body{display:grid;align-content:center;gap:2px;padding:6px 7px;min-width:0}.season-calendar-body strong{overflow-wrap:anywhere;color:#fff;font-size:.77rem;line-height:1.25;text-transform:uppercase}.season-calendar-body em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d3e6f1;font-size:.68rem}.season-calendar-type{display:block;padding:3px 5px;background:var(--calendar-accent);color:#fff;text-align:center;font-size:.58rem;font-weight:850;text-transform:uppercase}.season-calendar-body small{color:#c8d9e5;font-size:.64rem}@media(max-width:850px){.season-calendar-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}}@media(max-width:700px){.race-calendar-form{grid-template-columns:1fr}.race-calendar-form .wide{grid-column:auto}.season-calendar-panel{padding:13px}.season-calendar-grid{grid-template-columns:1fr}.season-calendar-event{grid-template-columns:66px 43px minmax(0,1fr)}}#openRaceCalendar.calendar-hero-link{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:12px 19px!important;border:2px solid #ffe39a!important;border-radius:14px!important;background:linear-gradient(135deg,#ffd861,#f3ad27)!important;color:#163b68!important;font-size:1rem;font-weight:900;box-shadow:0 7px 16px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.55);text-shadow:none}#openRaceCalendar.calendar-hero-link i{font-size:1.22em}#openRaceCalendar.calendar-hero-link:hover{filter:brightness(1.06);transform:translateY(-1px)}@media(max-width:700px){#openRaceCalendar.calendar-hero-link{width:100%;font-size:1.04rem}}
 .hero{flex-wrap:wrap}.hero>div:first-child{min-width:min(100%,360px);flex:1 1 420px}.hero-actions{display:flex;flex:0 1 auto;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;max-width:100%}@media(max-width:850px){.hero-actions{width:100%;justify-content:flex-start}}@media(max-width:700px){.hero>div:first-child{flex-basis:auto}.hero-actions{display:grid;grid-template-columns:1fr;gap:9px}}
 
-
 /* Dashboard mobile: i comandi restano sotto la testata, mai sopra ai testi. */
 @media(max-width:760px){
   .hero{
@@ -42,8 +41,6 @@
 }
 
 
-
-
 /* Mobile dashboard: solo il Calendario resta in evidenza nell’angolo alto. */
 @media(max-width:760px){
   .hero{padding-top:28px!important}
@@ -55,7 +52,8 @@
     display:flex!important;
     flex-direction:row!important;
     flex-wrap:wrap!important;
-    justify-content:flex-end!important;
+    justify-content:flex-start!important;
+    width:100%!important;
     max-width:none!important;
     margin:18px 0 0!important;
     gap:9px!important;
@@ -70,7 +68,6 @@
     width:auto!important;
     margin:0!important;
   }
-  .hero-actions a.admin-link{order:0!important}
-  #openPublicHistory{order:1!important}
+  #openPublicHistory{order:0!important}
+  .hero-actions a.admin-link{order:1!important}
 }
-
