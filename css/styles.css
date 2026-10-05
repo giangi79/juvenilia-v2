@@ -4338,3 +4338,14 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
 @media (max-width:560px){
   .hero > div:first-child{padding-top:172px}
 }
+
+
+/* Comandi calendario compatti e affiancati su telefono. */
+@media (max-width:560px){
+  .hero-actions{left:12px;right:12px;flex-direction:row;align-items:center;justify-content:space-between;gap:4px}
+  .hero-actions .admin-link{min-height:40px;margin-top:0;padding:8px 7px;font-size:.68rem;white-space:nowrap}
+  .hero-actions #openRaceCalendar{order:1}
+  .hero-actions .public-history-open{order:2}
+  .hero-actions > a.admin-link{order:3}
+  .hero > div:first-child{padding-top:64px}
+}
