@@ -39,3 +39,35 @@
   #openPublicHistory{order:1!important}
   .hero-actions a.admin-link{order:2!important}
 }
+
+
+/* Mobile dashboard: solo il Calendario resta in evidenza nell’angolo alto. */
+@media(max-width:760px){
+  .hero{padding-top:28px!important}
+  .hero>div:first-child{padding-top:54px!important}
+  .hero-actions{
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    display:flex!important;
+    flex-direction:row!important;
+    flex-wrap:wrap!important;
+    justify-content:flex-start!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:18px 0 0!important;
+    gap:9px!important;
+    order:2!important;
+  }
+  .hero-actions>*{position:static!important;width:auto!important;margin:0!important}
+  #openRaceCalendar.calendar-hero-link{
+    position:absolute!important;
+    top:14px!important;
+    right:14px!important;
+    z-index:5!important;
+    width:auto!important;
+    margin:0!important;
+  }
+  #openPublicHistory{order:0!important}
+  .hero-actions a.admin-link{order:1!important}
+}
