@@ -67,6 +67,17 @@ function attendeePanel(registrations){
   return {panel,count:confirmed.length};
 }
 
+async function notifyQuickRegistrationTelegram(event,athlete){
+  try{
+    const {error}=await db.functions.invoke('telegram-dispatch',{
+      body:{action:'status_now',event_slug:event.slug,athlete_id:athlete.athlete_id,status:'yes'}
+    });
+    if(error)console.warn('Notifica Telegram iscrizione veloce non inviata:',error.message||error);
+  }catch(error){
+    console.warn('Notifica Telegram iscrizione veloce non inviata:',error);
+  }
+}
+
 function showQuickRegistrationCelebration(){
   const overlay=document.getElementById('celebrationEffect');
   if(!overlay)return;
@@ -139,6 +150,7 @@ function openQuickRegistrationConfirmation(event,athlete){
       confirmButton.disabled=false;
       return;
     }
+    void notifyQuickRegistrationTelegram(event,athlete);
     dialog.close();
     showQuickRegistrationCelebration();
     await enrichEventCards();
