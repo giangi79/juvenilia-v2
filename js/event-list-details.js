@@ -108,7 +108,7 @@ function openQuickRegistrationConfirmation(event,athlete){
   const days=Array.isArray(configuredDays)?configuredDays.filter(Boolean):[];
   const dialog=document.createElement('dialog');
   dialog.className='quick-registration-dialog quick-registration-confirm-dialog';
-  dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">CONFERMA ISCRIZIONE</div><h2>Confermi l’iscrizione?</h2><p class="quick-registration-selected-name"></p><div class="quick-registration-day-picker"></div><p class="quick-registration-state is-confirmation" aria-live="polite"></p><div class="quick-registration-actions"><button type="button" class="quick-registration-confirm"><i class="fas fa-check"></i> Conferma iscrizione</button><button value="cancel" class="quick-registration-cancel">Annulla</button></div></form>';
+  dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">CONFERMA ISCRIZIONE</div><h2>Confermi l’iscrizione?</h2><p class="quick-registration-selected-name"></p><div class="quick-registration-day-picker"></div><div class="quick-registration-companion-picker"></div><p class="quick-registration-state is-confirmation" aria-live="polite"></p><div class="quick-registration-actions"><button type="button" class="quick-registration-confirm"><i class="fas fa-check"></i> Conferma iscrizione</button><button value="cancel" class="quick-registration-cancel">Annulla</button></div></form>';
   dialog.querySelector('.quick-registration-selected-name').textContent=athlete.full_name||'Atleta';
   const dayPicker=dialog.querySelector('.quick-registration-day-picker');
   if(days.length){
@@ -130,32 +130,94 @@ function openQuickRegistrationConfirmation(event,athlete){
     });
     dayPicker.append(choices);
   }
+  const companionPicker=dialog.querySelector('.quick-registration-companion-picker');
+  let companionCheck=null,companionInput=null;
+  if(event.config?.show_companion!==false){
+    const title=document.createElement('strong');
+    title.textContent='Accompagnatore';
+    companionPicker.append(title);
+    if(athlete.has_companion){
+      const saved=document.createElement('span');
+      saved.textContent='Accompagnatore già inserito';
+      companionPicker.append(saved);
+    }else{
+      const label=document.createElement('label');
+      label.className='quick-registration-day-choice';
+      companionCheck=document.createElement('input');
+      companionCheck.type='checkbox';
+      const text=document.createElement('span');
+      text.textContent='Aggiungi accompagnatore';
+      label.append(companionCheck,text);
+      companionInput=document.createElement('input');
+      companionInput.type='text';
+      companionInput.className='quick-registration-companion-name';
+      companionInput.placeholder='Nome accompagnatore';
+      companionInput.setAttribute('aria-label','Nome accompagnatore (visibile solo all’admin)');
+      companionInput.autocomplete='name';
+      companionInput.hidden=true;
+      const privacy=document.createElement('small');
+      privacy.textContent='Il nome è visibile solo all’admin.';
+      privacy.hidden=true;
+      companionCheck.addEventListener('change',()=>{
+        companionInput.hidden=!companionCheck.checked;
+        privacy.hidden=!companionCheck.checked;
+        if(companionCheck.checked)companionInput.focus();
+      });
+      companionPicker.append(label,companionInput,privacy);
+    }
+  }else companionPicker.hidden=true;
   const state=dialog.querySelector('.quick-registration-state');
   const confirmButton=dialog.querySelector('.quick-registration-confirm');
+  let registrationSaved=false,saving=false;
+  dialog.addEventListener('cancel',e=>{if(saving)e.preventDefault()});
   confirmButton.onclick=async()=>{
-    const selectedDays=[...dialog.querySelectorAll('.quick-registration-day-choice input:checked')].map(input=>input.value);
-    if(days.length&&!selectedDays.length){
+    if(saving)return;
+    const selectedDays=[...dialog.querySelectorAll('.quick-registration-day-choice input:checked')].filter(input=>input!==companionCheck).map(input=>input.value);
+    if(!registrationSaved&&days.length&&!selectedDays.length){
       state.textContent='Seleziona almeno un giorno di gara.';
       return;
     }
-    confirmButton.disabled=true;
-    state.textContent='Salvataggio iscrizione…';
-    const payload=days.length
-      ? {p_event_slug:event.slug,p_athlete_id:athlete.athlete_id,p_days:selectedDays}
-      : {p_event_slug:event.slug,p_athlete_id:athlete.athlete_id,p_status:'yes'};
-    const rpcName=days.length?'v2_confirm_registration_with_days':'v2_set_registration_status';
-    const {error}=await db.rpc(rpcName,payload);
-    if(error){
-      state.textContent='Non è stato possibile confermare: '+error.message;
-      confirmButton.disabled=false;
+    const companionName=companionCheck?.checked?companionInput.value.trim().toUpperCase():'';
+    if(companionCheck?.checked&&!companionName){
+      state.textContent='Inserisci il nome dell’accompagnatore.';
+      companionInput.focus();
       return;
     }
-    void notifyQuickRegistrationTelegram(event,athlete);
-    dialog.close();
-    showQuickRegistrationCelebration();
-    await enrichEventCards();
+    saving=true;
+    confirmButton.disabled=true;
+    const closeButtons=dialog.querySelectorAll('.quick-registration-close, .quick-registration-cancel');
+    closeButtons.forEach(button=>button.disabled=true);
+    state.textContent=registrationSaved?'Salvataggio accompagnatore…':'Salvataggio iscrizione…';
+    try{
+      if(!registrationSaved){
+        const payload=days.length
+          ? {p_event_slug:event.slug,p_athlete_id:athlete.athlete_id,p_days:selectedDays}
+          : {p_event_slug:event.slug,p_athlete_id:athlete.athlete_id,p_status:'yes'};
+        const rpcName=days.length?'v2_confirm_registration_with_days':'v2_set_registration_status';
+        const {error}=await db.rpc(rpcName,payload);
+        if(error)throw error;
+        registrationSaved=true;
+        void notifyQuickRegistrationTelegram(event,athlete);
+      }
+      if(companionName){
+        if(companionCheck)companionCheck.disabled=true;
+        const {error}=await db.rpc('v2_set_companion',{p_event_slug:event.slug,p_athlete_id:athlete.athlete_id,p_companion_name:companionName});
+        if(error)throw error;
+      }
+      dialog.close();
+      showQuickRegistrationCelebration();
+    }catch(error){
+      if(registrationSaved){
+        state.textContent='Iscrizione confermata, ma non è stato possibile salvare l’accompagnatore. Riprova oppure chiudi e verifica nella pagina della gara.';
+        confirmButton.textContent='Riprova a salvare';
+      }else state.textContent='Non è stato possibile confermare: '+(error?.message||'riprova.');
+    }finally{
+      saving=false;
+      confirmButton.disabled=false;
+      closeButtons.forEach(button=>button.disabled=false);
+    }
   };
-  dialog.addEventListener('close',()=>dialog.remove());
+  dialog.addEventListener('close',()=>{dialog.remove();if(registrationSaved)void enrichEventCards()});
   document.body.append(dialog);
   dialog.showModal();
 }
@@ -333,7 +395,8 @@ const style=document.createElement('style');style.textContent=`
 .event-card-attendees li{display:flex;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:8px;background:rgba(255,255,255,.08)}
 .event-card-attendees li span{color:#b9d5e8;font-size:.78rem;text-align:right}
 .event-card-attendees p{margin:0}
-.quick-registration-day-picker{display:grid;gap:8px;margin:16px 0 4px;padding:11px 12px;border:1px solid #d3e0e8;border-radius:11px;background:#f7fbff;color:#173b5a}.quick-registration-day-choices{display:flex;flex-wrap:wrap;gap:7px}.quick-registration-day-choice{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid #b8ccda;border-radius:9px;background:#fff;color:#173b5a;font-weight:700;font-size:.85rem}.quick-registration-day-choice input{accent-color:#1769aa}
+.quick-registration-day-picker:not(:empty),.quick-registration-companion-picker:not(:empty){display:grid;gap:8px;margin:16px 0 4px;padding:11px 12px;border:1px solid #d3e0e8;border-radius:11px;background:#f7fbff;color:#173b5a}.quick-registration-day-choices{display:flex;flex-wrap:wrap;gap:7px}.quick-registration-day-choice{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid #b8ccda;border-radius:9px;background:#fff;color:#173b5a;font-weight:700;font-size:.85rem}.quick-registration-day-choice input{accent-color:#1769aa}
+.quick-registration-companion-name{width:100%;box-sizing:border-box;padding:10px;border:1px solid #7895ac;border-radius:9px;background:#fff;color:#112f4a;font:inherit}.quick-registration-companion-picker small{color:#4d6377}.quick-registration-companion-name[hidden],.quick-registration-companion-picker [hidden]{display:none}
 .event-card-registration-fees{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 10px;padding:9px 11px;border-radius:10px;background:rgba(5,26,43,.48);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:.82rem}
 .event-card-registration-fees strong{color:#fff}
 .event-card-registration-fees details{margin-left:auto}
