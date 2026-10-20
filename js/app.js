@@ -47,7 +47,7 @@ function renderEventList(events){
     const heading=document.createElement('h2');heading.className='event-list-section-title';heading.textContent=title;
     const grid=document.createElement('div');grid.className='event-list-grid';
     items.forEach(e=>{
-      const card=document.createElement('article');card.className='event-card card';
+      const card=document.createElement('article');card.className='event-card card';card.dataset.eventSlug=e.slug;
       if(e.season_name){const season=document.createElement('span');season.className='event-season-badge';season.textContent=`Stagione ${e.season_name}`;card.append(season)}
       if(isExpired){const badge=document.createElement('span');badge.className='event-expired-badge';badge.textContent='SCADUTO';card.append(badge)}
       const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';
