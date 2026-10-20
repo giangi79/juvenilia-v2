@@ -1,5 +1,12 @@
 import { db } from './supabase.js';
 
+function chronologicalRaceDate(config){
+  const value=config?.event_start_date;
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return '';
+  const parsed=new Date(value+'T00:00:00Z');
+  return !Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===value?value:'';
+}
+
 function raceDateDisplay(cfg){
   const parse=value=>{if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;const d=new Date(value+'T12:00:00Z');return Number.isNaN(d.getTime())?null:d};
   const start=parse(cfg.event_start_date),end=parse(cfg.event_end_date)||start;
@@ -354,7 +361,7 @@ async function enrichEventCards(){
     cards.forEach((card,index)=>{
       card.querySelector('.event-list-place-date')?.remove();
       const title=card.querySelector('h2')?.textContent?.trim();
-      const detail=details[index]?.title===title?details[index]:details.find(item=>item.title===title);
+      const detail=details.find(item=>item.slug===card.dataset.eventSlug)||(details[index]?.title===title?details[index]:details.find(item=>item.title===title));
       if(!detail)return;
       const place=typeof detail.config.event_location==='string'?detail.config.event_location.trim():'';
       const {date,days}=raceDateDisplay(detail.config);
@@ -366,6 +373,16 @@ async function enrichEventCards(){
         deadline?.insertAdjacentElement('beforebegin',box);
       }
       renderActions(card,detail,detail.config,detail.registrations);
+    });
+    const dates=new Map(details.map(detail=>[detail.slug,chronologicalRaceDate(detail.config)]));
+    list.querySelectorAll('.event-list-grid').forEach(grid=>{
+      const original=[...grid.querySelectorAll(':scope > .event-card')];
+      const sorted=original.slice().sort((a,b)=>{
+        const left=dates.get(a.dataset.eventSlug)||'9999-99-99';
+        const right=dates.get(b.dataset.eventSlug)||'9999-99-99';
+        return left.localeCompare(right);
+      });
+      if(sorted.some((card,index)=>card!==original[index]))sorted.forEach(card=>grid.append(card));
     });
   }finally{busy=false}
 }
