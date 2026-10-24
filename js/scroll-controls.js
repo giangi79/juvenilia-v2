@@ -21,3 +21,37 @@ bottomBtn.onclick=()=>window.scrollTo({top:document.documentElement.scrollHeight
 
 /* Mantiene entrambi i controlli disponibili anche dopo render e scroll. */
 window.addEventListener('scroll',()=>topBtn?.classList.add('visible'),{passive:true});
+
+
+// Aggiornamento con trascinamento verso il basso, come nel browser.
+let pullStartY=0;
+let pullDistance=0;
+let pullArmed=false;
+const PULL_TO_REFRESH_DISTANCE=78;
+
+window.addEventListener('touchstart',event=>{
+  if(window.scrollY>0||event.touches.length!==1)return;
+  pullStartY=event.touches[0].clientY;
+  pullDistance=0;
+  pullArmed=true;
+},{passive:true});
+
+window.addEventListener('touchmove',event=>{
+  if(!pullArmed||event.touches.length!==1)return;
+  pullDistance=event.touches[0].clientY-pullStartY;
+  if(pullDistance<=0){pullArmed=false;return}
+  if(pullDistance>=PULL_TO_REFRESH_DISTANCE)event.preventDefault();
+},{passive:false});
+
+window.addEventListener('touchend',()=>{
+  if(!pullArmed)return;
+  const shouldRefresh=pullDistance>=PULL_TO_REFRESH_DISTANCE&&window.scrollY===0;
+  pullArmed=false;
+  pullDistance=0;
+  if(shouldRefresh)window.location.reload();
+},{passive:true});
+
+window.addEventListener('touchcancel',()=>{
+  pullArmed=false;
+  pullDistance=0;
+},{passive:true});
