@@ -26,7 +26,17 @@ function sanitizePublicHtml(html){const tpl=document.createElement('template');t
 function goTop(){window.scrollTo({top:0,left:0,behavior:'auto'});document.documentElement.scrollTop=0;document.body.scrollTop=0}
 function showHistoryButton(show){document.getElementById('openPublicHistory')?.classList.toggle('hidden',!show)}
 async function init(){initVisualControls();const preservedView=location.hash.toLowerCase();if(preservedView==='#calendario'||preservedView==='#storico')return;if(selectedSlug){await loadEvent(selectedSlug);goTop()}else{await loadEvents();goTop()}}
-async function loadEvents(){const {data,error}=await db.rpc('v2_list_public_events');if(error){showFatal(error.message);return}renderEventList(data||[])}
+async function loadEvents(){
+  const {data,error}=await db.rpc('v2_list_public_events');
+  if(error){showFatal(error.message);return}
+  const events=Array.isArray(data)?data:[];
+  const withRaceDates=await Promise.all(events.map(async event=>{
+    const {data:detail}=await db.rpc('v2_get_public_event',{p_slug:event.slug});
+    const config=detail?.config||{};
+    return {...event,_raceEndDate:config.event_end_date||config.event_start_date||''};
+  }));
+  renderEventList(withRaceDates);
+}
 function renderEventList(events){
   posterRequest++;renderPublicPoster(null);
   const list=document.getElementById('eventsList');list.replaceChildren();
@@ -35,11 +45,16 @@ function renderEventList(events){
   document.getElementById('eventTitle').innerHTML='<span>COMPETIZIONI</span> <strong>JUVENILIA</strong>';
   document.getElementById('eventDescription').textContent='Seleziona una gara per visualizzare le iscrizioni.';
   stopHeroCountdown();
-  const now=Date.now();
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const raceFinishedBeforeToday=value=>{
+    if(typeof value!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;
+    const end=new Date(value+'T00:00:00');
+    return !Number.isNaN(end.getTime())&&end<today;
+  };
   const open=[],expired=[];
   events.forEach(event=>{
-    const deadline=event.registration_deadline?Date.parse(event.registration_deadline):NaN;
-    (Number.isFinite(deadline)&&deadline<=now?expired:open).push(event);
+    (raceFinishedBeforeToday(event._raceEndDate)?expired:open).push(event);
   });
   const addSection=(title,items,isExpired)=>{
     if(!items.length)return;
@@ -49,10 +64,10 @@ function renderEventList(events){
     items.forEach(e=>{
       const card=document.createElement('article');card.className='event-card card';card.dataset.eventSlug=e.slug;
       if(e.season_name){const season=document.createElement('span');season.className='event-season-badge';season.textContent=`Stagione ${e.season_name}`;card.append(season)}
-      if(isExpired){const badge=document.createElement('span');badge.className='event-expired-badge';badge.textContent='SCADUTO';card.append(badge)}
+      if(isExpired){const badge=document.createElement('span');badge.className='event-expired-badge';badge.textContent='CONCLUSA';card.append(badge)}
       const h=document.createElement('h2');h.textContent=e.title||e.name||'Gara';
       const meta=document.createElement('div');meta.className='event-meta';
-      meta.textContent=e.registration_deadline?`${isExpired?'Iscrizioni scadute':'Scadenza iscrizioni'}: ${formatDate(e.registration_deadline)}`:'';
+      meta.textContent=e.registration_deadline?`${isExpired?'Gara conclusa · Scadenza iscrizioni':'Scadenza iscrizioni'}: ${formatDate(e.registration_deadline)}`:'';
       const b=document.createElement('button');b.textContent='Apri gara';b.onclick=()=>openEvent(e.slug);
       card.append(h,meta,b);grid.append(card);
     });
@@ -68,7 +83,7 @@ function renderEventList(events){
     list.append(section);
   };
   addSection('Gare in programma',open,false);
-  addSection('Gare con iscrizioni scadute',expired,true);
+  addSection('Gare concluse',expired,true);
   goTop();
 }
 function openEvent(slug){selectedSlug=slug;directEventMode=false;history.pushState({},'',`${location.pathname}?gara=${encodeURIComponent(slug)}`);goTop();loadEvent(slug).then(goTop)}
