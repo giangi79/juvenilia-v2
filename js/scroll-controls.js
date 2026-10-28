@@ -28,6 +28,7 @@ let pullStartY=0;
 let pullDistance=0;
 let pullArmed=false;
 const PULL_TO_REFRESH_DISTANCE=78;
+const isAtTop=()=>Math.max(0,window.scrollY||0,document.documentElement?.scrollTop||0,document.body?.scrollTop||0)<=1;
 
 // Indicatore visivo dell'aggiornamento tramite trascinamento.
 const pullHint=document.createElement('div');
@@ -49,7 +50,7 @@ document.head.append(pullHintStyle);
 
 
 window.addEventListener('touchstart',event=>{
-  if(window.scrollY>0||event.touches.length!==1)return;
+  if(!isAtTop()||event.touches.length!==1)return;
   pullStartY=event.touches[0].clientY;
   pullDistance=0;
   pullArmed=true;
@@ -65,7 +66,7 @@ window.addEventListener('touchmove',event=>{
 
 window.addEventListener('touchend',()=>{
   if(!pullArmed)return;
-  const shouldRefresh=pullDistance>=PULL_TO_REFRESH_DISTANCE&&window.scrollY===0;
+  const shouldRefresh=pullDistance>=PULL_TO_REFRESH_DISTANCE&&isAtTop();
   pullArmed=false;
   pullDistance=0;
   clearPullHint();
