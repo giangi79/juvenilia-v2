@@ -42,7 +42,7 @@ function renderEventList(events){
   const today=new Date();
   today.setHours(0,0,0,0);
   const raceFinishedBeforeToday=value=>{
-    if(typeof value!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return false;
+    if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
     const end=new Date(value+'T00:00:00');
     return !Number.isNaN(end.getTime())&&end<today;
   };
