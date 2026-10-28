@@ -29,13 +29,7 @@ async function init(){initVisualControls();const preservedView=location.hash.toL
 async function loadEvents(){
   const {data,error}=await db.rpc('v2_list_public_events');
   if(error){showFatal(error.message);return}
-  const events=Array.isArray(data)?data:[];
-  const withRaceDates=await Promise.all(events.map(async event=>{
-    const {data:detail}=await db.rpc('v2_get_public_event',{p_slug:event.slug});
-    const config=detail?.config||{};
-    return {...event,_raceEndDate:config.event_end_date||config.event_start_date||''};
-  }));
-  renderEventList(withRaceDates);
+  renderEventList(Array.isArray(data)?data:[]);
 }
 function renderEventList(events){
   posterRequest++;renderPublicPoster(null);
@@ -54,7 +48,7 @@ function renderEventList(events){
   };
   const open=[],expired=[];
   events.forEach(event=>{
-    (raceFinishedBeforeToday(event._raceEndDate)?expired:open).push(event);
+    (raceFinishedBeforeToday(event.event_end_date||event.event_start_date)?expired:open).push(event);
   });
   const addSection=(title,items,isExpired)=>{
     if(!items.length)return;
