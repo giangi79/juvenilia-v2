@@ -77,7 +77,7 @@ function attendeePanel(registrations){
     [['F','Femmine'],['M','Maschi'],['','Sesso non indicato']].forEach(([gender,label])=>{
       const athletes=rows.filter(row=>{const value=String(row.gender||'').trim().toUpperCase();return gender?value===gender:!['F','M'].includes(value)});
       if(!athletes.length)return;
-      const heading=document.createElement('div');heading.className='attendee-gender';heading.textContent=label;
+      const heading=document.createElement('div');heading.className='attendee-gender gender-'+(gender||'unknown');heading.textContent=label;
       const list=document.createElement('ul');
       athletes.forEach(row=>{const li=document.createElement('li');const name=document.createElement('strong');name.textContent=row.full_name||'Atleta';li.append(name);list.append(li)});
       section.append(heading,list);
