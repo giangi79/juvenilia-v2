@@ -114,7 +114,38 @@ async function notifyTelegramStatusNow(r,status){try{const {error}=await db.func
 async function setStatus(r,status){if(!confirm(`Confermi la scelta per ${r.full_name}?`))return;const {error}=await db.rpc('v2_set_registration_status',{p_event_slug:selectedSlug,p_athlete_id:r.athlete_id,p_status:status});if(error){toast(friendlyError(error.message));return}toast('Scelta salvata');void notifyTelegramStatusNow(r,status);if(status==='yes')showCelebration();await loadEvent(selectedSlug)}
 async function setCompanion(r,input){const clean=input.value.trim().toUpperCase();if(!clean)return toast('Inserisci il nome dell\u2019accompagnatore');const {error}=await db.rpc('v2_set_companion',{p_event_slug:selectedSlug,p_athlete_id:r.athlete_id,p_companion_name:clean});if(error){toast(friendlyError(error.message));return}toast('Accompagnatore salvato e bloccato');await loadEvent(selectedSlug)}
 function friendlyError(m){if(m.includes('REGISTRATION_DEADLINE_EXPIRED'))return 'La scadenza per questa iscrizione è terminata.';if(m.includes('REGISTRATION_LOCKED'))return 'Questa iscrizione è stata bloccata dall’amministratore.';if(m.includes('COMPANION_ALREADY_SET'))return 'L’accompagnatore è già stato inserito. Può modificarlo solo l’amministratore.';if(m.includes('EVENT_NOT_AVAILABLE'))return 'La gara non è disponibile.';return m}
-function renderConfirmed(regs,cfg){const yes=regs.filter(r=>r.status==='yes'),sec=document.getElementById('confirmedSection');sec.replaceChildren();if(!yes.length){sec.classList.add('hidden');return}sec.classList.remove('hidden');const details=document.createElement('details');details.className='compact-public-section';const summary=document.createElement('summary');const title=document.createElement('strong');title.textContent='Riepilogo partecipanti';const count=document.createElement('span');count.className='compact-public-count';count.textContent=String(yes.length);summary.append(title,count);const box=document.createElement('div');box.id='confirmed';box.className='compact-public-content';details.append(summary,box);sec.append(details);const groups=yes.reduce((a,r)=>((a[r.category]??=[]).push(r),a),{});Object.entries(groups).sort().forEach(([cat,list])=>{const g=document.createElement('div');g.className='confirmed-group';const h=document.createElement('strong');h.textContent=cat;g.append(h,document.createElement('br'));list.sort((a,b)=>a.full_name.localeCompare(b.full_name)).forEach(r=>{const s=document.createElement('span');s.className='pill';s.dataset.athleteId=String(r.athlete_id);s.textContent=r.race_day?`${r.full_name} — ${r.race_day}`:r.full_name;g.append(s)});box.append(g)})}
+function renderConfirmed(regs,cfg){
+  const yes=regs.filter(r=>r.status==='yes'),sec=document.getElementById('confirmedSection');
+  sec.replaceChildren();
+  if(!yes.length){sec.classList.add('hidden');return}
+  sec.classList.remove('hidden');
+  const details=document.createElement('details');details.className='compact-public-section';
+  const summary=document.createElement('summary');
+  const title=document.createElement('strong');title.textContent='Riepilogo partecipanti';
+  const count=document.createElement('span');count.className='compact-public-count';count.textContent=String(yes.length);
+  summary.append(title,count);
+  const box=document.createElement('div');box.id='confirmed';box.className='compact-public-content';
+  details.append(summary,box);sec.append(details);
+  const groups=new Map();
+  yes.forEach(row=>{
+    const cat=String(row.category||'Categoria non indicata').trim().toUpperCase();
+    if(!groups.has(cat))groups.set(cat,[]);
+    groups.get(cat).push(row);
+  });
+  [...groups.entries()].sort((a,b)=>categoryOrderValue(a[0])-categoryOrderValue(b[0])||a[0].localeCompare(b[0],'it')).forEach(([cat,list])=>{
+    const group=document.createElement('div');group.className='confirmed-group';
+    const heading=document.createElement('strong');heading.textContent=cat;group.append(heading);
+    [['F','Femmine'],['M','Maschi'],['','Sesso non indicato']].forEach(([gender,label])=>{
+      const athletes=list.filter(row=>{const value=String(row.gender||'').trim().toUpperCase();return gender?value===gender:!['F','M'].includes(value)}).sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''),'it'));
+      if(!athletes.length)return;
+      const groupLabel=document.createElement('div');groupLabel.className='confirmed-gender-label';groupLabel.textContent=label;group.append(groupLabel);
+      const names=document.createElement('div');names.className='confirmed-gender-names';
+      athletes.forEach(row=>{const name=document.createElement('span');name.className='pill';name.dataset.athleteId=String(row.athlete_id);name.textContent=row.race_day?`${row.full_name} — ${row.race_day}`:row.full_name;names.append(name)});
+      group.append(names);
+    });
+    box.append(group);
+  });
+}
 function renderPayment(pay){const box=document.getElementById('paymentBox');box.replaceChildren();if(!pay){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Dati pagamento';box.append(h);if(typeof pay==='string'){const p=document.createElement('p');p.textContent=pay;box.append(p);return}const entries=[['Intestatario',pay.holder],['IBAN',pay.iban],['Causale',pay.reason],['Email distinta',pay.email]].filter(([,v])=>v);const grid=document.createElement('div');grid.className='payment-grid';entries.forEach(([k,v])=>{const d=document.createElement('div');d.className='payment-item';const s=document.createElement('strong');s.textContent=k;const p=document.createElement('div');p.textContent=v;d.append(s,p);grid.append(d)});if(entries.length)box.append(grid);else box.classList.add('hidden')}
 function renderDocs(cfg){const docs=[cfg.document_1,cfg.document_2].filter(Boolean),box=document.getElementById('documentsBox');box.replaceChildren();if(!docs.some(d=>d?.url)){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Documenti';box.append(h);docs.forEach(d=>{if(d?.url){const a=document.createElement('a');a.href=d.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=d.text||'Apri documento';a.className='pill';box.append(a)}})}
 document.getElementById('search').addEventListener('input',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));document.getElementById('categoryFilter').addEventListener('change',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));
