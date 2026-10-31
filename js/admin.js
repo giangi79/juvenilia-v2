@@ -339,7 +339,6 @@ function updatePublicEventLink(){
 let calendarDraft=null;
 $('newEventBtn').onclick=()=>{
   calendarDraft=null;
-  $('calendarDraftFields').classList.add('hidden');
   currentEvent=null;
   populateLinkedEventSelects('');
   fillEvent();
@@ -355,16 +354,21 @@ $('newEventBtn').onclick=()=>{
 document.addEventListener('juvenilia:create-from-calendar',event=>{
   $('newEventBtn').click();
   calendarDraft={...event.detail};
-  $('calendarDraftStart').value=calendarDraft.start_date||'';
-  $('calendarDraftEnd').value=calendarDraft.end_date||'';
-  $('calendarDraftLocation').value=calendarDraft.location||'';
-  $('calendarDraftFields').classList.remove('hidden');
   $('eventTitleInput').value=calendarDraft.title||'';
   $('eventTitleInput').dispatchEvent(new Event('input',{bubbles:true}));
   const season=seasons.find(s=>s.start_date<=calendarDraft.start_date&&s.end_date>=calendarDraft.start_date);
   if(season)$('eventSeasonInput').value=season.id;
   $('eventDescriptionInput').value=calendarDraft.notes||'';
   $('eventPublishedInput').checked=false;
+  setTimeout(()=>{
+    if(!calendarDraft)return;
+    $('eventLocationInput').value=calendarDraft.location||'';
+    $('eventStartDateInput').value=calendarDraft.start_date||'';
+    $('eventEndDateInput').value=calendarDraft.end_date||'';
+    $('eventStartDateInput').dispatchEvent(new Event('change',{bubbles:true}));
+    $('eventEndDateInput').dispatchEvent(new Event('change',{bubbles:true}));
+    $('saveEventBtn').disabled=false;
+  },150);
   $('saveEventBtn').disabled=false;
   $('eventTitleInput').focus({preventScroll:true});
   toast('Dati del calendario pronti: controlla la stagione e crea la gara');
@@ -411,9 +415,9 @@ $('eventSlugInput').addEventListener('input',()=>{
 });
 $('saveEventBtn').onclick=async()=>{
   if(calendarDraft){
-    const start=$('calendarDraftStart').value,end=$('calendarDraftEnd').value;
-    if(!start|| (end&&end<start)){toast('Controlla le date della gara');return false}
-    calendarDraft.start_date=start;calendarDraft.end_date=end;calendarDraft.location=$('calendarDraftLocation').value.trim();
+    const start=$('eventStartDateInput').value,end=$('eventEndDateInput').value;
+    if(!start||(end&&end<start)){toast('Controlla le date della gara');return false}
+    calendarDraft.start_date=start;calendarDraft.end_date=end;calendarDraft.location=$('eventLocationInput').value.trim();
   }
   const title=$('eventTitleInput').value.trim();
   const finalSlug=slugify($('eventSlugInput').value || title);
@@ -435,7 +439,6 @@ $('saveEventBtn').onclick=async()=>{
     const {error:configError}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
     if(configError)toast('Gara creata, ma date e luogo non salvati: '+configError.message);
     calendarDraft=null;
-    $('calendarDraftFields').classList.add('hidden');
   }
 
   if(creating && saved?.id){
