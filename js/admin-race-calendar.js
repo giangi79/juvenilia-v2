@@ -85,7 +85,14 @@ async function loadCalendar(){
       toast('Appuntamento eliminato dal calendario');
       loadCalendar();
     });
-    actions.append(edit,remove);
+    const create=document.createElement('button');
+    create.type='button';
+    create.innerHTML='<i class="fas fa-flag-checkered"></i> Crea gara';
+    create.addEventListener('click',()=>{
+      document.querySelector('[data-tab="event"]')?.click();
+      document.dispatchEvent(new CustomEvent('juvenilia:create-from-calendar',{detail:item}));
+    });
+    actions.append(create,edit,remove);
     row.append(info,actions);
     monthSection.append(row);
   });
