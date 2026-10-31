@@ -336,7 +336,9 @@ function updatePublicEventLink(){
   };
 }
 
+let calendarDraft=null;
 $('newEventBtn').onclick=()=>{
+  calendarDraft=null;
   currentEvent=null;
   populateLinkedEventSelects('');
   fillEvent();
@@ -349,6 +351,19 @@ $('newEventBtn').onclick=()=>{
   $('eventTitleInput').focus();
   toast('Nuova gara: inserisci il titolo e compila i dati');
 };
+document.addEventListener('juvenilia:create-from-calendar',event=>{
+  $('newEventBtn').click();
+  calendarDraft={...event.detail};
+  $('eventTitleInput').value=calendarDraft.title||'';
+  $('eventTitleInput').dispatchEvent(new Event('input',{bubbles:true}));
+  const season=seasons.find(s=>s.start_date<=calendarDraft.start_date&&s.end_date>=calendarDraft.start_date);
+  if(season)$('eventSeasonInput').value=season.id;
+  $('eventDescriptionInput').value=calendarDraft.notes||'';
+  $('eventPublishedInput').checked=false;
+  $('saveEventBtn').disabled=false;
+  $('eventTitleInput').focus({preventScroll:true});
+  toast('Dati del calendario pronti: controlla la stagione e crea la gara');
+});
 $('deleteEventBtn').onclick=async()=>{
   if(!currentEvent)return toast('Seleziona prima una gara');
   const title=currentEvent.title||'questa gara';
@@ -402,6 +417,15 @@ $('saveEventBtn').onclick=async()=>{
   const {data:saved,error}=await q;
   if(error){toast(error.message);return false}
   toast(creating?'Gara creata':'Modifiche salvate');
+
+  if(creating && saved?.id && calendarDraft){
+    const draft=calendarDraft;
+    const entries=[['event_start_date',draft.start_date],['event_end_date',draft.end_date||''],['event_location',draft.location||'']];
+    const rows=entries.map(([key,value])=>({event_id:saved.id,key,value,is_public:true}));
+    const {error:configError}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
+    if(configError)toast('Gara creata, ma date e luogo non salvati: '+configError.message);
+    calendarDraft=null;
+  }
 
   if(creating && saved?.id){
     const {data:activeAthletes,error:athletesError}=await db
