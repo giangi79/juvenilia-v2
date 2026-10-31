@@ -17,6 +17,14 @@
 .admin-calendar-month>.admin-row .actions{margin-top:10px}
 .admin-calendar-month>.form-grid{margin:12px;padding:14px;background:#304b61;border:1px solid #617b90;border-radius:10px;color:#fff}
 .admin-calendar-month>.form-grid label{color:#fff!important}
+</style><style>
+#tab-event #eventStartDateInput,#tab-event #eventEndDateInput{display:block}
+#tab-event #eventStartDatePreview,#tab-event #eventEndDatePreview{display:block;margin-top:5px;line-height:1.4}
+#tab-event #eventStartDatePreview:empty,#tab-event #eventEndDatePreview:empty{display:none}
+#tab-event #eventStartDateInput~small+#eventLegacyDate{display:block}
+#tab-event label:has(> #eventEndDateInput){display:block;margin-top:14px}
+#tab-event label:has(> #eventEndDateInput)>small{display:block;margin-top:5px;line-height:1.4}
+#tab-event #eventLegacyDate:not(:empty){display:block;margin-top:5px;line-height:1.4}
 </style></head>
 <body>
 <div class="juvenilia-brand"><div class="juvenilia-brand-inner"><img src="assets/juvenilia-logo-orizzontale.png" alt="Polisportiva Juvenilia"><div class="juvenilia-brand-copy"><span class="juvenilia-kicker">Pattinaggio corsa</span><strong>Area amministrazione</strong></div></div><div class="speed-lines" aria-hidden="true"><i></i><i></i><i></i></div></div>
