@@ -54,10 +54,11 @@ async function loadCalendar(){
     if(month!==currentMonth||!monthSection){
       currentMonth=month;
       monthSection=document.createElement('section');
+      monthSection.className='admin-calendar-month';
       const heading=document.createElement('h3');
       const date=parseDate(item.start_date);
       heading.textContent=date?date.toLocaleDateString('it-IT',{month:'long',year:'numeric'}):'Data da definire';
-      heading.style.textTransform='capitalize';
+      heading.className='admin-calendar-month-heading';
       monthSection.append(heading);
       host.append(monthSection);
     }
