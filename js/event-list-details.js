@@ -63,14 +63,27 @@ function attendeePanel(registrations){
     const empty=document.createElement('p');empty.textContent='Nessun atleta confermato.';panel.append(empty);
     return {panel,count:0};
   }
-  const ul=document.createElement('ul');
+  const order=['GIOVANISSIMI','ESORDIENTI','R12','RAGAZZI','ALLIEVI','JUNIOR','SENIOR'];
+  const groups=new Map();
   confirmed.forEach(row=>{
-    const li=document.createElement('li');
-    const name=document.createElement('strong');name.textContent=row.full_name||'Atleta';
-    const category=document.createElement('span');category.textContent=row.category||'—';
-    li.append(name,category);ul.append(li);
+    const category=String(row.category||'Categoria non indicata').trim().toUpperCase();
+    if(!groups.has(category))groups.set(category,[]);
+    groups.get(category).push(row);
   });
-  panel.append(ul);
+  const rank=category=>{const index=order.indexOf(category);return index<0?order.length:index};
+  [...groups.entries()].sort((a,b)=>rank(a[0])-rank(b[0])||a[0].localeCompare(b[0],'it')).forEach(([category,rows])=>{
+    const section=document.createElement('section');section.className='attendee-category';
+    const title=document.createElement('h4');title.textContent=category;section.append(title);
+    [['F','Femmine'],['M','Maschi'],['','Sesso non indicato']].forEach(([gender,label])=>{
+      const athletes=rows.filter(row=>{const value=String(row.gender||'').trim().toUpperCase();return gender?value===gender:!['F','M'].includes(value)});
+      if(!athletes.length)return;
+      const heading=document.createElement('div');heading.className='attendee-gender';heading.textContent=label;
+      const list=document.createElement('ul');
+      athletes.forEach(row=>{const li=document.createElement('li');const name=document.createElement('strong');name.textContent=row.full_name||'Atleta';li.append(name);list.append(li)});
+      section.append(heading,list);
+    });
+    panel.append(section);
+  });
   return {panel,count:confirmed.length};
 }
 
@@ -408,6 +421,9 @@ const style=document.createElement('style');style.textContent=`
 .quick-registration-card{position:relative;padding:26px;background:#fff;border-radius:20px;margin:0}
 .quick-registration-card h2{margin:5px 34px 8px 0;color:#123c62!important;font-size:1.3rem}.quick-registration-help{margin:0 0 18px;color:#4d6377!important}.quick-registration-close{position:absolute;right:14px;top:10px;width:44px;height:44px;border:0;border-radius:8px;background:transparent;color:#173b5a;font-size:2.15rem;font-weight:800;line-height:1;display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s}.quick-registration-close:hover,.quick-registration-close:focus-visible{background:#e81123;color:#fff;outline:none}.quick-registration-close:active{background:#c50f1f}.quick-registration-label{display:grid;gap:6px;font-weight:800;color:#173b5a!important}.quick-registration-label input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #7895ac!important;border-radius:11px;background:#f7fbff!important;color:#112f4a!important;font:inherit}.quick-registration-label input::placeholder{color:#54718b!important;opacity:1}.quick-registration-results{display:grid;gap:7px;margin-top:11px;max-height:270px;overflow:auto}.quick-registration-result{display:grid;gap:3px;text-align:left;padding:11px 13px;border:1px solid #d3e0e8;border-radius:11px;background:#fff;color:#183b59;font:inherit;cursor:pointer}.quick-registration-result span{font-size:.82rem;color:#60798c}.quick-registration-result:hover,.quick-registration-result.is-selected{border-color:#0b72bd;background:#edf7ff}.quick-registration-state{min-height:1.3em;margin:11px 0;color:#164f7d;font-weight:700}.quick-registration-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap}.quick-registration-actions button{min-height:43px;width:100%}.quick-registration-confirm:disabled{opacity:.55;cursor:not-allowed}@media(max-width:500px){.quick-registration-card{padding:22px 17px}.quick-registration-actions{display:grid;grid-template-columns:1fr}.quick-registration-actions button{width:100%}}
 .event-card-attendees{margin-top:12px;padding:12px;border:1px solid rgba(255,255,255,.25);border-radius:13px;background:rgba(5,26,43,.5)}
+.attendee-category+.attendee-category{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.25)}
+.attendee-category h4{margin:0 0 8px;color:#ffd166;font-size:.9rem}
+.attendee-gender{margin:8px 0 5px;color:#c9e7f7;font-size:.78rem;font-weight:800}
 .event-card-attendees ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0;padding:0;list-style:none}
 .event-card-attendees li{display:flex;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:8px;background:rgba(255,255,255,.08)}
 .event-card-attendees li span{color:#b9d5e8;font-size:.78rem;text-align:right}
