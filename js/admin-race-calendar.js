@@ -9,16 +9,20 @@ const formatRange=item=>item.end_date&&item.end_date!==item.start_date
   : formatDate(item.start_date);
 const form=$('adminRaceCalendarForm');
 let editingId=null;
+const formHome=document.createComment('calendar form position');
+form?.before(formHome);
 
 function resetForm(){
   editingId=null;
+  if(form&&formHome.parentNode)formHome.after(form);
   form?.reset();
   const submit=form?.querySelector('button[type="submit"]');
   if(submit)submit.innerHTML='<i class="fas fa-plus"></i> Aggiungi al calendario';
   $('adminRaceCalendarCancel')?.classList.add('hidden');
 }
 
-function beginEdit(item){
+function beginEdit(item,row){
+  row.after(form);
   editingId=item.id;
   form.elements.title.value=item.title||'';
   form.elements.start_date.value=item.start_date||'';
@@ -29,12 +33,13 @@ function beginEdit(item){
   const submit=form.querySelector('button[type="submit"]');
   submit.innerHTML='<i class="fas fa-floppy-disk"></i> Salva modifiche';
   $('adminRaceCalendarCancel')?.classList.remove('hidden');
-  form.scrollIntoView({behavior:'smooth',block:'start'});
+  form.elements.title.focus({preventScroll:true});
 }
 
 async function loadCalendar(){
   const host=$('adminRaceCalendarList');
   if(!host)return;
+  if(editingId)resetForm();
   host.innerHTML='<p class="muted">Caricamento appuntamenti…</p>';
   const {data,error}=await db.from('v2_race_calendar').select('*').order('start_date',{ascending:true});
   if(error){host.innerHTML='<p class="error">Non è stato possibile caricare il calendario.</p>';toast(error.message);return}
@@ -42,7 +47,20 @@ async function loadCalendar(){
   const upcoming=(data||[]).filter(item=>parseDate(item.end_date||item.start_date)>=today);
   host.replaceChildren();
   if(!upcoming.length){host.innerHTML='<p class="muted">Non hai ancora inserito gare future.</p>';return}
+  let currentMonth='';
+  let monthSection=null;
   upcoming.forEach(item=>{
+    const month=(item.start_date||'').slice(0,7);
+    if(month!==currentMonth||!monthSection){
+      currentMonth=month;
+      monthSection=document.createElement('section');
+      const heading=document.createElement('h3');
+      const date=parseDate(item.start_date);
+      heading.textContent=date?date.toLocaleDateString('it-IT',{month:'long',year:'numeric'}):'Data da definire';
+      heading.style.textTransform='capitalize';
+      monthSection.append(heading);
+      host.append(monthSection);
+    }
     const row=document.createElement('article');
     row.className='admin-row';
     const info=document.createElement('div');
@@ -54,7 +72,7 @@ async function loadCalendar(){
     const actions=document.createElement('div'); actions.className='actions';
     const edit=document.createElement('button'); edit.type='button'; edit.className='secondary';
     edit.innerHTML='<i class="fas fa-pen"></i> Modifica';
-    edit.addEventListener('click',()=>beginEdit(item));
+    edit.addEventListener('click',()=>beginEdit(item,row));
     const remove=document.createElement('button'); remove.type='button'; remove.className='danger';
     remove.innerHTML='<i class="fas fa-trash"></i> Elimina';
     remove.addEventListener('click',async()=>{
@@ -68,7 +86,7 @@ async function loadCalendar(){
     });
     actions.append(edit,remove);
     row.append(info,actions);
-    host.append(row);
+    monthSection.append(row);
   });
 }
 
