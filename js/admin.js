@@ -435,6 +435,7 @@ $('saveEventBtn').onclick=async()=>{
   if(creating && saved?.id && calendarDraft){
     const draft=calendarDraft;
     const entries=[['event_start_date',draft.start_date],['event_end_date',draft.end_date||''],['event_location',draft.location||'']];
+    if(Array.isArray(draft.categories)&&draft.categories.length)entries.push(['allowed_categories',draft.categories]);
     const rows=entries.map(([key,value])=>({event_id:saved.id,key,value,is_public:true}));
     const {error:configError}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
     if(configError)toast('Gara creata, ma date e luogo non salvati: '+configError.message);
