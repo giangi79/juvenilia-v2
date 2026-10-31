@@ -121,6 +121,7 @@ function render(){
       type.className='season-calendar-type';
       type.textContent=item.event_type||'Gara';
       body.append(name,place,type);
+      if(item.categories?.length){const cats=document.createElement('small');cats.textContent='Categorie: '+item.categories.join(' · ');body.append(cats)}
       if(item.notes){const note=document.createElement('small');note.textContent=item.notes;body.append(note)}
       card.append(date,icon,body);
       column.append(card);
@@ -187,7 +188,7 @@ async function downloadCalendarPdf(){
         const kind=typeInfo(item.event_type),color=pdfColor(kind.key),dateInfo=dateParts(item);
         const title=doc.splitTextToSize(String(item.title||'Gara'),columnWidth-30).slice(0,2);
         const details=doc.splitTextToSize([item.event_type,item.location].filter(Boolean).join(' · '),columnWidth-30).slice(0,1);
-        const notes=String(item.notes||'').trim();
+        const notes=[item.categories?.length?'Categorie: '+item.categories.join(', '):'',String(item.notes||'').trim()].filter(Boolean).join(' · ');
         const noteLines=notes?doc.splitTextToSize(notes,columnWidth-30).slice(0,3):[];
         const rowHeight=Math.max(12,6+title.length*3.1+(details.length?2.8:0)+noteLines.length*2.6);
         if(y+rowHeight>height-10)return;
