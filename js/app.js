@@ -54,8 +54,22 @@ function renderEventList(events){
     if(!items.length)return;
     const section=document.createElement('section');section.className='event-list-section';
     const heading=document.createElement('h2');heading.className='event-list-section-title';heading.textContent=title;
-    const grid=document.createElement('div');grid.className='event-list-grid';
-    items.forEach(e=>{
+    let grid=null,monthKey=null;
+    if(isExpired){grid=document.createElement('div');grid.className='event-list-grid'}
+    else section.append(heading);
+    const ordered=isExpired?items:items.slice().sort((a,b)=>(a.event_start_date||'9999').localeCompare(b.event_start_date||'9999'));
+    ordered.forEach(e=>{
+      if(!isExpired){
+        const valid=typeof e.event_start_date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(e.event_start_date);
+        const key=valid?e.event_start_date.slice(0,7):'';
+        if(!grid||key!==monthKey){
+          monthKey=key;
+          const month=document.createElement('h3');month.className='event-list-month-heading';
+          month.textContent=valid?new Date(e.event_start_date+'T12:00:00').toLocaleDateString('it-IT',{month:'long',year:'numeric'}):'Data da definire';
+          grid=document.createElement('div');grid.className='event-list-grid';
+          section.append(month,grid);
+        }
+      }
       const card=document.createElement('article');card.className='event-card card';card.dataset.eventSlug=e.slug;
       if(e.season_name){const season=document.createElement('span');season.className='event-season-badge';season.textContent=`Stagione ${e.season_name}`;card.append(season)}
       if(isExpired){const badge=document.createElement('span');badge.className='event-expired-badge';badge.textContent='CONCLUSA';card.append(badge)}
@@ -73,7 +87,7 @@ function renderEventList(events){
       const hint=document.createElement('span');hint.className='expired-events-hint';hint.textContent='Mostra gare';
       summary.append(titleWrap,count,hint);
       details.append(summary,grid);section.append(details);
-    }else section.append(heading,grid);
+    }
     list.append(section);
   };
   addSection('Gare in programma',open,false);
