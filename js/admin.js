@@ -365,6 +365,10 @@ document.addEventListener('juvenilia:create-from-calendar',event=>{
     $('eventLocationInput').value=calendarDraft.location||'';
     $('eventStartDateInput').value=calendarDraft.start_date||'';
     $('eventEndDateInput').value=calendarDraft.end_date||'';
+    if(Array.isArray(calendarDraft.categories)&&calendarDraft.categories.length){
+      const selected=new Set(calendarDraft.categories);
+      document.querySelectorAll('#eventCategoriesChecks input[type="checkbox"]').forEach(input=>{input.checked=selected.has(input.value);input.dispatchEvent(new Event('change',{bubbles:true}))});
+    }
     $('eventStartDateInput').dispatchEvent(new Event('change',{bubbles:true}));
     $('eventEndDateInput').dispatchEvent(new Event('change',{bubbles:true}));
     $('saveEventBtn').disabled=false;
@@ -418,6 +422,8 @@ $('saveEventBtn').onclick=async()=>{
     const start=$('eventStartDateInput').value,end=$('eventEndDateInput').value;
     if(!start||(end&&end<start)){toast('Controlla le date della gara');return false}
     calendarDraft.start_date=start;calendarDraft.end_date=end;calendarDraft.location=$('eventLocationInput').value.trim();
+    const categoryInputs=[...document.querySelectorAll('#eventCategoriesChecks input[type="checkbox"]')];
+    if(categoryInputs.length)calendarDraft.categories=categoryInputs.filter(input=>input.checked).map(input=>input.value);
   }
   const title=$('eventTitleInput').value.trim();
   const finalSlug=slugify($('eventSlugInput').value || title);
