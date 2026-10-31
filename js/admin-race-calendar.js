@@ -30,6 +30,7 @@ function beginEdit(item,row){
   form.elements.event_type.value=item.event_type||'Gara';
   form.elements.location.value=item.location||'';
   form.elements.notes.value=item.notes||'';
+  form.querySelectorAll('[name="categories"]').forEach(input=>input.checked=(item.categories||[]).includes(input.value));
   const submit=form.querySelector('button[type="submit"]');
   submit.innerHTML='<i class="fas fa-floppy-disk"></i> Salva modifiche';
   $('adminRaceCalendarCancel')?.classList.remove('hidden');
@@ -69,6 +70,7 @@ async function loadCalendar(){
     const meta=document.createElement('div'); meta.className='muted';
     meta.textContent=[formatRange(item),item.event_type,item.location].filter(Boolean).join(' · ');
     info.append(title,meta);
+    if(item.categories?.length){const categories=document.createElement('small');categories.className='muted';categories.textContent='Categorie: '+item.categories.join(' · ');info.append(categories)}
     if(item.notes){const notes=document.createElement('small');notes.className='muted';notes.textContent=item.notes;info.append(notes)}
     const actions=document.createElement('div'); actions.className='actions';
     const edit=document.createElement('button'); edit.type='button'; edit.className='secondary';
@@ -114,6 +116,7 @@ form?.addEventListener('submit',async event=>{
     end_date:endDate||null,
     event_type:String(values.get('event_type')||'Gara'),
     location:String(values.get('location')||'').trim()||null,
+    categories:values.getAll('categories'),
     notes:String(values.get('notes')||'').trim()||null
   };
   const {error}=editingId
