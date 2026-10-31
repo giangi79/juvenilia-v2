@@ -138,7 +138,7 @@ function renderConfirmed(regs,cfg){
     [['F','Femmine'],['M','Maschi'],['','Sesso non indicato']].forEach(([gender,label])=>{
       const athletes=list.filter(row=>{const value=String(row.gender||'').trim().toUpperCase();return gender?value===gender:!['F','M'].includes(value)}).sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''),'it'));
       if(!athletes.length)return;
-      const groupLabel=document.createElement('div');groupLabel.className='confirmed-gender-label';groupLabel.textContent=label;group.append(groupLabel);
+      const groupLabel=document.createElement('div');groupLabel.className='confirmed-gender-label gender-'+(gender||'unknown');groupLabel.textContent=label;group.append(groupLabel);
       const names=document.createElement('div');names.className='confirmed-gender-names';
       athletes.forEach(row=>{const name=document.createElement('span');name.className='pill';name.dataset.athleteId=String(row.athlete_id);name.textContent=row.race_day?`${row.full_name} — ${row.race_day}`:row.full_name;names.append(name)});
       group.append(names);
