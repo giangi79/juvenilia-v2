@@ -46,7 +46,7 @@ function officialEntrantsUrl(config,byClub=false){
     if(url.pathname!=='/attivita/corsa_trofeo_modulo.php')return '';
     const id=url.searchParams.get('id_manif')||'';
     if(!/^[0-9]{4}$/.test(id))return '';
-    return byClub?'https://attivita.rollergames.it/corsa/manifestazione_societa.php?short&id='+id:'https://attivita.rollergames.it/corsa/manifestazione_categ.php?id='+id;
+    return 'iscritti-ufficiali.html?id='+encodeURIComponent(id)+'&vista='+(byClub?'societa':'categoria');
   }catch{return ''}
 }
 
