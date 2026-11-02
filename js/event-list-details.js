@@ -37,7 +37,7 @@ function programUrl(config){
     .find(doc=>doc&&/programma/i.test(String(doc.text||''))&&safeUrl(doc.url))?.url||'';
 }
 
-function officialEntrantsUrl(config){
+function officialEntrantsUrl(config,byClub=false){
   const raw=programUrl(config);
   if(!raw)return '';
   try{
@@ -46,7 +46,7 @@ function officialEntrantsUrl(config){
     if(url.pathname!=='/attivita/corsa_trofeo_modulo.php')return '';
     const id=url.searchParams.get('id_manif')||'';
     if(!/^[0-9]{4}$/.test(id))return '';
-    return 'https://attivita.rollergames.it/corsa/manifestazione_categ.php?id='+id;
+    return byClub?'https://attivita.rollergames.it/corsa/manifestazione_societa.php?short&id='+id:'https://attivita.rollergames.it/corsa/manifestazione_categ.php?id='+id;
   }catch{return ''}
 }
 
@@ -369,7 +369,8 @@ function renderActions(card,event,config,registrations){
 
   actions.append(actionLink('Programma','fa-file-lines',programUrl(config),{external:true}));
   actions.append(actionLink('Google Maps','fa-location-dot',mapsUrl(config),{external:true}));
-  actions.append(actionLink('Iscritti alla gara','fa-list-check',officialEntrantsUrl(config),{external:true}));
+  actions.append(actionLink('Iscritti per categoria','fa-list-check',officialEntrantsUrl(config),{external:true}));
+  actions.append(actionLink('Iscritti per società','fa-people-group',officialEntrantsUrl(config,true),{external:true}));
   card.append(actions,attendees.panel);
 }
 
