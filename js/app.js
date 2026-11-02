@@ -151,17 +151,25 @@ function renderDocs(cfg){
   const docs=[cfg.document_1,cfg.document_2].filter(Boolean),box=document.getElementById('documentsBox');
   box.replaceChildren();
   const candidate=cfg.event_program_url||docs.find(doc=>/programma/i.test(String(doc.text||''))&&doc.url)?.url||'';
-  let raceId='';
+  let raceId='',programUrl='';
   try{
     const url=new URL(candidate,location.href);
+    if(['http:','https:'].includes(url.protocol))programUrl=url.href;
     if(['http:','https:'].includes(url.protocol)&&['www.fisr.info','fisr.info'].includes(url.hostname.toLowerCase())&&url.pathname==='/attivita/corsa_trofeo_modulo.php'){
       const id=url.searchParams.get('id_manif')||'';
       if(/^[0-9]{4}$/.test(id))raceId=id;
     }
   }catch{}
-  if(!docs.some(doc=>doc?.url)&&!raceId){box.classList.add('hidden');return}
+  if(!docs.some(doc=>doc?.url)&&!programUrl&&!raceId){box.classList.add('hidden');return}
   box.classList.remove('hidden');
   const h=document.createElement('h2');h.textContent='Documenti e iscritti';box.append(h);
+  const hasProgramDocument=docs.some(doc=>{
+    if(!doc?.url)return false;
+    try{return new URL(doc.url,location.href).href===programUrl}catch{return false}
+  });
+  if(programUrl&&!hasProgramDocument){
+    const link=document.createElement('a');link.href=programUrl;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Programma';link.className='pill';box.append(link);
+  }
   docs.forEach(doc=>{if(doc?.url){const a=document.createElement('a');a.href=doc.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=doc.text||'Apri documento';a.className='pill';box.append(a)}});
   if(raceId){
     const links=document.createElement('div');links.className='official-entrants-links';
