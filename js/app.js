@@ -173,8 +173,8 @@ function renderDocs(cfg){
   docs.forEach(doc=>{if(doc?.url){const a=document.createElement('a');a.href=doc.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=doc.text||'Apri documento';a.className='pill';box.append(a)}});
   if(raceId){
     const links=document.createElement('div');links.className='official-entrants-links';
-    [['Iscritti per categoria','manifestazione_categ.php?id='],['Iscritti per società','manifestazione_societa.php?short&id=']].forEach(([label,path])=>{
-      const a=document.createElement('a');a.href='https://attivita.rollergames.it/corsa/'+path+raceId;a.target='_blank';a.rel='noopener noreferrer';a.className='official-entrants-link';a.textContent=label;links.append(a);
+    [['Iscritti per categoria','categoria'],['Iscritti per società','societa']].forEach(([label,path])=>{
+      const a=document.createElement('a');a.href='iscritti-ufficiali.html?id='+encodeURIComponent(raceId)+'&vista='+path;a.target='_blank';a.rel='noopener noreferrer';a.className='official-entrants-link';a.textContent=label;links.append(a);
     });
     box.append(links);
   }
