@@ -147,7 +147,31 @@ function renderConfirmed(regs,cfg){
   });
 }
 function renderPayment(pay){const box=document.getElementById('paymentBox');box.replaceChildren();if(!pay){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Dati pagamento';box.append(h);if(typeof pay==='string'){const p=document.createElement('p');p.textContent=pay;box.append(p);return}const entries=[['Intestatario',pay.holder],['IBAN',pay.iban],['Causale',pay.reason],['Email distinta',pay.email]].filter(([,v])=>v);const grid=document.createElement('div');grid.className='payment-grid';entries.forEach(([k,v])=>{const d=document.createElement('div');d.className='payment-item';const s=document.createElement('strong');s.textContent=k;const p=document.createElement('div');p.textContent=v;d.append(s,p);grid.append(d)});if(entries.length)box.append(grid);else box.classList.add('hidden')}
-function renderDocs(cfg){const docs=[cfg.document_1,cfg.document_2].filter(Boolean),box=document.getElementById('documentsBox');box.replaceChildren();if(!docs.some(d=>d?.url)){box.classList.add('hidden');return}box.classList.remove('hidden');const h=document.createElement('h2');h.textContent='Documenti';box.append(h);docs.forEach(d=>{if(d?.url){const a=document.createElement('a');a.href=d.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=d.text||'Apri documento';a.className='pill';box.append(a)}})}
+function renderDocs(cfg){
+  const docs=[cfg.document_1,cfg.document_2].filter(Boolean),box=document.getElementById('documentsBox');
+  box.replaceChildren();
+  const candidate=cfg.event_program_url||docs.find(doc=>/programma/i.test(String(doc.text||''))&&doc.url)?.url||'';
+  let raceId='';
+  try{
+    const url=new URL(candidate,location.href);
+    if(['http:','https:'].includes(url.protocol)&&['www.fisr.info','fisr.info'].includes(url.hostname.toLowerCase())&&url.pathname==='/attivita/corsa_trofeo_modulo.php'){
+      const id=url.searchParams.get('id_manif')||'';
+      if(/^[0-9]{4}$/.test(id))raceId=id;
+    }
+  }catch{}
+  if(!docs.some(doc=>doc?.url)&&!raceId){box.classList.add('hidden');return}
+  box.classList.remove('hidden');
+  const h=document.createElement('h2');h.textContent='Documenti e iscritti';box.append(h);
+  docs.forEach(doc=>{if(doc?.url){const a=document.createElement('a');a.href=doc.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=doc.text||'Apri documento';a.className='pill';box.append(a)}});
+  if(raceId){
+    const links=document.createElement('div');links.className='official-entrants-links';
+    [['Iscritti per categoria','manifestazione_categ.php?id='],['Iscritti per società','manifestazione_societa.php?short&id=']].forEach(([label,path])=>{
+      const a=document.createElement('a');a.href='https://attivita.rollergames.it/corsa/'+path+raceId;a.target='_blank';a.rel='noopener noreferrer';a.className='official-entrants-link';a.textContent=label;links.append(a);
+    });
+    box.append(links);
+  }
+}
+
 document.getElementById('search').addEventListener('input',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));document.getElementById('categoryFilter').addEventListener('change',()=>payload&&renderRegistrations(payload.registrations||[],payload.config||{}));
 function setRegistrationSort(mode){registrationSort=mode==='category'?'category':'name';const nameBtn=document.getElementById('sortByName'),catBtn=document.getElementById('sortByCategory'),active=registrationSort==='name'?nameBtn:catBtn;[nameBtn,catBtn].forEach(btn=>{if(!btn)return;const isActive=btn===active;btn.classList.toggle('active',isActive);btn.setAttribute('aria-pressed',String(isActive))});const nameIcon=nameBtn?.querySelector('.sort-indicator'),catIcon=catBtn?.querySelector('.sort-indicator');if(nameIcon)nameIcon.className=`fas ${registrationSort==='name'?'fa-arrow-down-a-z':'fa-sort'} sort-indicator`;if(catIcon)catIcon.className=`fas ${registrationSort==='category'?'fa-arrow-down-short-wide':'fa-sort'} sort-indicator`;if(payload)renderRegistrations(payload.registrations||[],payload.config||{})}
 document.getElementById('sortByName')?.addEventListener('click',()=>setRegistrationSort('name'));document.getElementById('sortByCategory')?.addEventListener('click',()=>setRegistrationSort('category'));
