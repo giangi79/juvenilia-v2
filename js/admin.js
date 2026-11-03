@@ -573,22 +573,22 @@ function renderAthletes(){
   });
 }
 $('addAthleteBtn').onclick=async()=>{
-  const season=selectedAthleteSeason(),fullName=$('athleteName').value.trim().toUpperCase(),category=$('athleteCategory').value.trim().toUpperCase(),gender=$('athleteGender').value||null,birthDate=$('athleteBirthDate').value||null,raceRaw=$('athleteRaceNumber').value.trim(),raceNumber=raceRaw===''?null:Number(raceRaw);
+  const season=selectedAthleteSeason(),fullName=$('athleteName').value.trim().toUpperCase(),category=$('athleteCategory').value.trim().toUpperCase(),gender=$('athleteGender').value||null,birthDate=$('athleteBirthDate').value||null,raceRaw=$('athleteRaceNumber').value.trim(),raceNumber=raceRaw===''?null:Number(raceRaw),membershipNumber=$('athleteMembershipNumber').value.trim()||null;
   if(!season)return toast('Seleziona una stagione');if(!fullName||!category)return toast('Nome e categoria obbligatori');if(raceNumber!==null&&(!Number.isInteger(raceNumber)||raceNumber<1))return toast('Il numero gara deve essere un numero intero maggiore di zero');
   let athleteId=null;
-  const {data:matches,error:searchError}=await db.from('v2_athletes').select('id,full_name,gender,birth_date,race_number').eq('full_name',fullName);
+  const {data:matches,error:searchError}=await db.from('v2_athletes').select('id,full_name,gender,birth_date,race_number,membership_number').eq('full_name',fullName);
   if(searchError)return toast(searchError.message);
   const same=(matches||[]).find(a=>a.full_name.trim().toUpperCase()===fullName&&(a.gender||null)===gender);
-  if(same){if(birthDate&&same.birth_date&&same.birth_date!==birthDate)return toast('Data di nascita diversa da quella già presente: verifica l’atleta');athleteId=same.id;if((birthDate&&!same.birth_date)||(raceNumber!==null&&same.race_number!==raceNumber)){const update={};if(birthDate&&!same.birth_date)update.birth_date=birthDate;if(raceNumber!==null&&same.race_number!==raceNumber)update.race_number=raceNumber;const {error}=await db.from('v2_athletes').update(update).eq('id',athleteId);if(error)return toast('Errore aggiornamento atleta: '+error.message)}}
+  if(same){if(birthDate&&same.birth_date&&same.birth_date!==birthDate)return toast('Data di nascita diversa da quella già presente: verifica l’atleta');if(membershipNumber&&same.membership_number&&same.membership_number!==membershipNumber)return toast('Matricola diversa da quella già presente: verifica l’atleta');athleteId=same.id;if((membershipNumber&&!same.membership_number)||(birthDate&&!same.birth_date)||(raceNumber!==null&&same.race_number!==raceNumber)){const update={};if(membershipNumber&&!same.membership_number)update.membership_number=membershipNumber;if(birthDate&&!same.birth_date)update.birth_date=birthDate;if(raceNumber!==null&&same.race_number!==raceNumber)update.race_number=raceNumber;const {error}=await db.from('v2_athletes').update(update).eq('id',athleteId);if(error)return toast('Errore aggiornamento atleta: '+error.message)}}
   else{
-    const {data:created,error}=await db.from('v2_athletes').insert({full_name:fullName,category,gender,birth_date:birthDate,race_number:raceNumber,is_active:season.is_current}).select('id').single();
+    const {data:created,error}=await db.from('v2_athletes').insert({full_name:fullName,category,gender,birth_date:birthDate,race_number:raceNumber,membership_number:membershipNumber,is_active:season.is_current}).select('id').single();
     if(error)return toast(error.message);athleteId=created.id;
   }
   const {error}=await db.from('v2_season_athletes').insert({season_id:season.id,athlete_id:athleteId,category,is_active:true});
   if(error)return toast(error.code==='23505'?'Atleta già presente in questa stagione':error.message);
   const {data:added,error:syncError}=await db.rpc('v2_sync_season_athlete_to_events',{p_season_id:season.id,p_athlete_id:athleteId});
   if(syncError)return toast('Atleta aggiunto, ma sincronizzazione gare non riuscita: '+syncError.message);
-  $('athleteName').value='';$('athleteBirthDate').value='';$('athleteRaceNumber').value='';toast(`${same?'Atleta aggiunto alla stagione':'Nuovo atleta aggiunto'}${added?` e inserito in ${added} gare`:''}`);await loadAthletes();
+  $('athleteName').value='';$('athleteBirthDate').value='';$('athleteRaceNumber').value='';$('athleteMembershipNumber').value='';toast(`${same?'Atleta aggiunto alla stagione':'Nuovo atleta aggiunto'}${added?` e inserito in ${added} gare`:''}`);await loadAthletes();
 };
 
 async function loadRegistrations(){
