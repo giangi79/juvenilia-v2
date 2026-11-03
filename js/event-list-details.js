@@ -358,7 +358,7 @@ function renderActions(card,event,config,registrations){
   const attendeesButton=document.createElement('button');
   attendeesButton.type='button';attendeesButton.className='event-card-action';
   attendeesButton.disabled=!attendees.count;
-  attendeesButton.innerHTML='<i class="fas fa-users" aria-hidden="true"></i><span>Iscritti</span>';
+  attendeesButton.innerHTML='<i class="fas fa-users" aria-hidden="true"></i><span>Iscritti ('+attendees.count+')</span>';
   attendeesButton.setAttribute('aria-expanded','false');
   attendeesButton.addEventListener('click',()=>{
     const open=attendees.panel.classList.toggle('hidden')===false;
