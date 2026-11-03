@@ -497,16 +497,16 @@ async function loadAthletes(){
   const {data,error}=await db.from('v2_season_athletes').select('id,season_id,athlete_id,category,is_active').eq('season_id',season.id);
   if(error)return toast(error.message);
   const roster=data||[],ids=roster.map(row=>row.athlete_id);let profiles=[];
-  if(ids.length){const {data:profileData,error:profileError}=await db.from('v2_athletes').select('id,full_name,gender,birth_date,race_number').in('id',ids);if(profileError)return toast('Errore anagrafica atleti: '+profileError.message);profiles=profileData||[]}
+  if(ids.length){const {data:profileData,error:profileError}=await db.from('v2_athletes').select('id,full_name,gender,birth_date,race_number,membership_number').in('id',ids);if(profileError)return toast('Errore anagrafica atleti: '+profileError.message);profiles=profileData||[]}
   const byId=new Map(profiles.map(a=>[a.id,a]));
-  athletes=roster.map(row=>{const athlete=byId.get(row.athlete_id);return{season_athlete_id:row.id,season_id:row.season_id,id:row.athlete_id,full_name:athlete?.full_name||'Atleta non disponibile',gender:athlete?.gender||null,birth_date:athlete?.birth_date||null,race_number:athlete?.race_number??null,category:row.category,is_active:row.is_active}}).sort((a,b)=>a.full_name.localeCompare(b.full_name,'it'));
+  athletes=roster.map(row=>{const athlete=byId.get(row.athlete_id);return{season_athlete_id:row.id,season_id:row.season_id,id:row.athlete_id,full_name:athlete?.full_name||'Atleta non disponibile',gender:athlete?.gender||null,birth_date:athlete?.birth_date||null,race_number:athlete?.race_number??null,membership_number:athlete?.membership_number||'',category:row.category,is_active:row.is_active}}).sort((a,b)=>a.full_name.localeCompare(b.full_name,'it'));
   const state=$('athleteSeasonState');state.textContent=`${season.is_current?'Stagione attuale':'In preparazione'} · ${athletes.length} atleti`;state.className=`season-state ${season.is_current?'current':'future'}`;
   $('addAthleteBtn').disabled=false;$('athleteName').disabled=false;$('athleteCategory').disabled=false;$('athleteGender').disabled=false;$('athleteRaceNumber').disabled=false;
   renderAthletes();
 }
 function renderAthletes(){
   $('athletesBody').replaceChildren();
-  if(!athletes.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.className='empty-state';td.textContent='Nessun atleta in questa rosa. Puoi aggiungerli qui oppure usare “Copia rosa attuale” nella scheda Stagioni.';tr.append(td);$('athletesBody').append(tr);return}
+  if(!athletes.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.className='empty-state';td.textContent='Nessun atleta in questa rosa. Puoi aggiungerli qui oppure usare “Copia rosa attuale” nella scheda Stagioni.';tr.append(td);$('athletesBody').append(tr);return}
   const categories=allAthleteCategories();
   athletes.forEach(a=>{
     const tr=document.createElement('tr');
@@ -524,6 +524,11 @@ function renderAthletes(){
     const raceTd=document.createElement('td');const raceInput=document.createElement('input');raceInput.type='number';raceInput.min='1';raceInput.step='1';raceInput.inputMode='numeric';raceInput.className='athlete-race-number-input';raceInput.value=a.race_number??'';raceInput.placeholder='—';raceInput.setAttribute('aria-label',`Numero gara di ${a.full_name}`);
     raceInput.onchange=async()=>{const raw=raceInput.value.trim();const next=raw===''?null:Number(raw);if(next!==null&&(!Number.isInteger(next)||next<1)){raceInput.value=a.race_number??'';return toast('Il numero gara deve essere un numero intero maggiore di zero')}raceInput.disabled=true;const {error}=await db.from('v2_athletes').update({race_number:next}).eq('id',a.id);raceInput.disabled=false;if(error){raceInput.value=a.race_number??'';return toast('Errore numero gara: '+error.message)}a.race_number=next;toast(`Numero gara di ${a.full_name} aggiornato`)};
     raceTd.append(raceInput);tr.append(raceTd);
+    const membershipTd=document.createElement('td');const membershipInput=document.createElement('input');
+    membershipInput.type='text';membershipInput.inputMode='numeric';membershipInput.value=a.membership_number||'';membershipInput.placeholder='—';
+    membershipInput.setAttribute('aria-label',`Matricola di ${a.full_name}`);
+    membershipInput.onchange=async()=>{const next=membershipInput.value.trim()||null;membershipInput.disabled=true;const {error}=await db.from('v2_athletes').update({membership_number:next}).eq('id',a.id);membershipInput.disabled=false;if(error){membershipInput.value=a.membership_number||'';return toast('Errore matricola: '+error.message)}a.membership_number=next||'';toast('Matricola aggiornata')};
+    membershipTd.append(membershipInput);tr.append(membershipTd);
     const activeTd=document.createElement('td');activeTd.textContent=a.is_active?'Sì':'No';tr.append(activeTd);
     const td=document.createElement('td');td.className='athlete-actions-cell';
 
