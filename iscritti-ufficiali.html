@@ -33,4 +33,17 @@ body{margin:0;background:#14283d;color:#eef7ff;font-family:system-ui,sans-serif}
 .sticky-controls .search{font-size:16px}
 .sticky-controls .reset-filters{font-size:.7rem!important;white-space:normal}
 }
-</style></head><body><main class="wrap"><div class="sticky-controls"><header class="head"><img src="assets/juvenilia-logo-orizzontale.png" alt="Polisportiva Juvenilia"><h1>Iscritti alla gara</h1><p id="race"></p></header><nav class="nav"><a href="index.html">← Torna alle gare</a><button id="cat">Per categoria</button><button id="club">Per società</button><a id="source" class="source" target="_blank" rel="noopener noreferrer">Pagina ufficiale ↗</a></nav><input id="search" class="search" type="search" placeholder="Cerca atleta, società o categoria…" aria-label="Cerca iscritti"><div class="filters"><label>Categoria<select id="categoryFilter"><option value="">Tutte le categorie</option></select></label><label>Sesso<select id="genderFilter"><option value="">Tutti</option><option value="F">Femmine</option><option value="M">Maschi</option></select></label><label>Gara<select id="raceFilter"><option value="">Tutte le gare</option></select></label><button id="resetFilters" type="button" class="reset-filters">Reset filtri</button></div></div><p id="status" class="status" role="status"></p><div id="results"></div></main><script type="module" src="js/official-entrants-view.js?v=4"></script></body></html>
+</style><style>
+@media(max-width:600px){
+.sticky-controls{position:fixed!important;top:0;left:0;right:0;z-index:50;margin:0!important;width:100%;box-sizing:border-box;padding-top:calc(6px + env(safe-area-inset-top, 0px))}
+#stickySpacer{display:block}
+}
+@media(min-width:601px){#stickySpacer{display:none}}
+</style></head><body><main class="wrap"><div id="stickySpacer" aria-hidden="true"></div><div class="sticky-controls"><header class="head"><img src="assets/juvenilia-logo-orizzontale.png" alt="Polisportiva Juvenilia"><h1>Iscritti alla gara</h1><p id="race"></p></header><nav class="nav"><a href="index.html">← Torna alle gare</a><button id="cat">Per categoria</button><button id="club">Per società</button><a id="source" class="source" target="_blank" rel="noopener noreferrer">Pagina ufficiale ↗</a></nav><input id="search" class="search" type="search" placeholder="Cerca atleta, società o categoria…" aria-label="Cerca iscritti"><div class="filters"><label>Categoria<select id="categoryFilter"><option value="">Tutte le categorie</option></select></label><label>Sesso<select id="genderFilter"><option value="">Tutti</option><option value="F">Femmine</option><option value="M">Maschi</option></select></label><label>Gara<select id="raceFilter"><option value="">Tutte le gare</option></select></label><button id="resetFilters" type="button" class="reset-filters">Reset filtri</button></div></div><p id="status" class="status" role="status"></p><div id="results"></div></main><script>
+(function(){
+ const controls=document.querySelector('.sticky-controls'),spacer=document.getElementById('stickySpacer');
+ function resizeControls(){spacer.style.height=matchMedia('(max-width:600px)').matches?Math.ceil(controls.getBoundingClientRect().height)+'px':'0px'}
+ if(window.ResizeObserver)new ResizeObserver(resizeControls).observe(controls);
+ window.addEventListener('resize',resizeControls);window.addEventListener('load',resizeControls);resizeControls();
+})();
+</script><script type="module" src="js/official-entrants-view.js?v=4"></script></body></html>
