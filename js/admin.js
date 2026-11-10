@@ -443,6 +443,7 @@ $('saveEventBtn').onclick=async()=>{
     const draft=calendarDraft;
     const entries=[['event_start_date',draft.start_date],['event_end_date',draft.end_date||''],['event_location',draft.location||'']];
     if(Array.isArray(draft.categories)&&draft.categories.length)entries.push(['allowed_categories',draft.categories]);
+    if(draft.fisr?.id_fisr)entries.push(['event_program_url',`https://www.fisr.info/attivita/corsa_trofeo_modulo.php?id_manif=${encodeURIComponent(String(draft.fisr.id_fisr))}`]);
     if(draft.fisr?.id_fisr && Array.isArray(draft.fisr.gare)){entries.push(['fisr_trophy_id',String(draft.fisr.id_fisr)]);entries.push(['fisr_races',draft.fisr.gare]);entries.push(['fisr_race_groups',draft.fisr.groups]);entries.push(['fisr_athlete_proves',{}]);}
     const rows=entries.map(([key,value])=>({event_id:saved.id,key,value,is_public:true}));
     const {error:configError}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
