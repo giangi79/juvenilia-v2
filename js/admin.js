@@ -365,6 +365,7 @@ document.addEventListener('juvenilia:create-from-calendar',event=>{
     $('eventLocationInput').value=calendarDraft.location||'';
     $('eventStartDateInput').value=calendarDraft.start_date||'';
     $('eventEndDateInput').value=calendarDraft.end_date||'';
+    if(calendarDraft.fisr?.id_fisr&&$('eventProgramUrlInput'))$('eventProgramUrlInput').value='https://www.fisr.info/attivita/corsa_trofeo_modulo.php?id_manif='+encodeURIComponent(String(calendarDraft.fisr.id_fisr));
     if(Array.isArray(calendarDraft.categories)&&calendarDraft.categories.length){
       const selected=new Set(calendarDraft.categories);
       document.querySelectorAll('#eventCategoriesChecks input[type="checkbox"]').forEach(input=>{input.checked=selected.has(input.value);input.dispatchEvent(new Event('change',{bubbles:true}))});
@@ -442,6 +443,10 @@ $('saveEventBtn').onclick=async()=>{
     const draft=calendarDraft;
     const entries=[['event_start_date',draft.start_date],['event_end_date',draft.end_date||''],['event_location',draft.location||'']];
     if(Array.isArray(draft.categories)&&draft.categories.length)entries.push(['allowed_categories',draft.categories]);
+    if(draft.fisr?.id_fisr&&Array.isArray(draft.fisr.gare)){
+      entries.push(['fisr_trophy_id',String(draft.fisr.id_fisr)],['fisr_races',draft.fisr.gare]);
+      entries.push(['event_program_url','https://www.fisr.info/attivita/corsa_trofeo_modulo.php?id_manif='+encodeURIComponent(String(draft.fisr.id_fisr))]);
+    }
     const rows=entries.map(([key,value])=>({event_id:saved.id,key,value,is_public:true}));
     const {error:configError}=await db.from('v2_event_config').upsert(rows,{onConflict:'event_id,key'});
     if(configError)toast('Gara creata, ma date e luogo non salvati: '+configError.message);
