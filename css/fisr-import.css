@@ -1,0 +1,6 @@
+.fisr-import-card{border:1px solid #447fa5!important;border-radius:16px!important;margin:14px 0;padding:18px;background:#10283c;color:#edf7ff}
+.fisr-import-card h2{margin:0 0 10px;color:#fff}.fisr-import-card .muted{color:#b7d0e3}
+.fisr-category-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:16px 0}
+.fisr-category{background:#183a55;border:1px solid #3d6683;border-radius:10px;padding:10px}.fisr-category summary{cursor:pointer;font-weight:750}.fisr-race-line{padding:7px 5px;border-top:1px solid #36566b}
+.fisr-athlete-proves{border:1px solid #3c6483;border-radius:12px;margin:15px 0;padding:15px;background:#10283c;color:#f1f7ff}.fisr-athlete-proves h3{margin:0 0 10px;color:#fff}.fisr-athlete-row{border-top:1px solid #35536b;padding:10px 0}.fisr-athlete-row summary{cursor:pointer;font-weight:700}.fisr-proof-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;padding:12px 0}.fisr-proof-grid label{display:flex;align-items:center;gap:8px;font-size:13px}.fisr-public-proves{font-size:12px;color:inherit;opacity:.9;padding:7px 0;line-height:1.5}
+@media(max-width:600px){.fisr-category-list{grid-template-columns:1fr}.fisr-proof-grid{grid-template-columns:1fr}}
