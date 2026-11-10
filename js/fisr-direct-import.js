@@ -1,43 +1,93 @@
-// Importazione FISR v0.9: solo dati pubblici di gara, mai credenziali o tessere atleti.
-const KEY='juvenilia_fisr_pending_v1';
-function parsePayload(){
+import { db } from './supabase.js';
+const KEY='juvenilia_fisr_pending_v2';
+const CATEGORY={GI:'GIOVANISSIMI',ES:'ESORDIENTI',R1:'R12',RA:'RAGAZZI',AL:'ALLIEVI',JU:'JUNIOR',SE:'SENIOR'};
+const $=id=>document.getElementById(id);
+const el=(tag,txt,cls)=>{const e=document.createElement(tag);if(txt!==undefined)e.textContent=txt;if(cls)e.className=cls;return e};
+const groupRaces=races=>{
+ const groups=new Map();
+ for(const r of races){const cat=CATEGORY[String(r.categoria).toUpperCase()];if(!cat)continue;
+  const name=String(r.descrizione||'').trim();const key=`${cat}|${name.toLocaleLowerCase('it')}`;
+  if(!groups.has(key))groups.set(key,{key,category:cat,name,ids:{}});
+  groups.get(key).ids[r.sesso]=String(r.id_gara);
+ }
+ return [...groups.values()];
+};
+function decode(){
  const hash=location.hash.slice(1);
  if(!hash.startsWith('fisr-import='))return null;
- history.replaceState(null,'',location.pathname+location.search);
- const encoded=decodeURIComponent(hash.slice('fisr-import='.length));
- const raw=atob(encoded);
- const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
- const data=JSON.parse(new TextDecoder().decode(bytes));
- if(data.v!==1||!/^\d{1,12}$/.test(data.id_fisr)||!Array.isArray(data.gare)||data.gare.length>500)throw Error('Dati FISR non validi');
- if(!data.gare.every(g=>/^\d{1,12}$/.test(String(g.id_gara))&&['M','F'].includes(g.sesso)))throw Error('Elenco gare FISR non valido');
- return data;
+ const raw=atob(decodeURIComponent(hash.slice('fisr-import='.length)));
+ const value=JSON.parse(new TextDecoder().decode(Uint8Array.from(raw,c=>c.charCodeAt(0))));
+ if(value.v!==1||!/^\d{1,12}$/.test(String(value.id_fisr))||!Array.isArray(value.gare)||!value.gare.length||value.gare.length>500)throw Error('Dati FISR non validi');
+ if(!value.gare.every(g=>/^\d{1,12}$/.test(String(g.id_gara))&&['M','F'].includes(g.sesso)&&CATEGORY[String(g.categoria).toUpperCase()]&&String(g.descrizione||'').length<150))throw Error('Elenco prove non valido');
+ return value;
 }
-let data=null;
-try{data=parsePayload();if(data)sessionStorage.setItem(KEY,JSON.stringify(data));else data=JSON.parse(sessionStorage.getItem(KEY)||'null');}catch(e){console.warn('Importazione FISR:',e);}
-if(data){
- const panel=document.createElement('section');panel.className='card';panel.id='fisrDirectPanel';panel.style.cssText='margin:14px 0;border:2px solid #2a6ab3;padding:18px';
- const heading=document.createElement('h2');heading.textContent='Importazione diretta FISR';
- const summary=document.createElement('p');summary.textContent=`${data.nome} · ID ${data.id_fisr} · ${data.gare.length} prove per categoria e sesso`;
- const detail=document.createElement('p');detail.textContent=(Array.isArray(data.campi_calendario)?data.campi_calendario:[]).slice(0,6).join(' · ');
- const table=document.createElement('details');const caption=document.createElement('summary');caption.textContent='Visualizza tutte le prove FISR';table.append(caption);
- const list=document.createElement('div');list.style.cssText='max-height:230px;overflow:auto';
- for(const g of data.gare){const line=document.createElement('div');line.textContent=`${g.id_gara} · ${g.categoria} · ${g.sesso} · ${g.descrizione}`;list.append(line)}table.append(list);
- const confirm=document.createElement('button');confirm.type='button';confirm.textContent='Prepara gara nel gestionale';
- const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Annulla';cancel.className='secondary';cancel.style.marginLeft='8px';
- const status=document.createElement('p');status.textContent='Nessun salvataggio automatico. Verifica date e categorie prima di salvare.';
- const fields=Array.isArray(data.campi_calendario)?data.campi_calendario:[];
- const year=new Date().getFullYear();
- const parseDate=value=>{const m=/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/.exec(String(value||'').trim());if(!m)return '';const y=m[3]?Number(m[3].length===2?'20'+m[3]:m[3]):year;const d=new Date(y,Number(m[2])-1,Number(m[1]));return d.getFullYear()===y&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[1])?`${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`:''};
- confirm.onclick=()=>{
-  const categoryMap={GI:'GIOVANISSIMI',ES:'ESORDIENTI',R1:'R12',RA:'RAGAZZI',AL:'ALLIEVI',JU:'JUNIOR',SE:'SENIOR'};
-  const categories=[...new Set(data.gare.map(g=>categoryMap[g.categoria]).filter(Boolean))];
-  const draft={title:data.nome,start_date:parseDate(fields[0]),end_date:'',location:fields[2]||'',categories,notes:`Fonte: FISR · Trofeo ${data.id_fisr}\nOrganizzatore: ${fields[3]||'non indicato'}\nScadenza iscrizioni: ${fields[4]||'da verificare'}\nProve FISR: ${data.gare.length}`,fisr:{id_fisr:data.id_fisr,gare:data.gare}};
-  document.querySelector('[data-tab="event"]')?.click();
-  document.dispatchEvent(new CustomEvent('juvenilia:create-from-calendar',{detail:draft}));
-  sessionStorage.removeItem(KEY);panel.remove();
+let lastHandledHash='';
+let previewPending=false;
+function readIncoming(){
+ const hash=location.hash;
+ if(hash.startsWith('#fisr-import=') && hash!==lastHandledHash){
+  lastHandledHash=hash;
+  try{
+   const data=decode();
+   if(!data)return;
+   sessionStorage.setItem(KEY,JSON.stringify(data));
+   history.replaceState(null,'',location.pathname+location.search);
+   document.getElementById('fisrDirectPanel')?.remove();
+   renderPreview(data);
+  }catch(e){
+   lastHandledHash='';
+   console.error('Importazione FISR: dati non leggibili',e);
+   showError(e);
+  }
+ }else if(!hash.startsWith('#fisr-import=') && !previewPending && !document.getElementById('fisrDirectPanel')){
+  try{const saved=JSON.parse(sessionStorage.getItem(KEY)||'null');if(saved)renderPreview(saved)}catch(e){console.error('Anteprima FISR',e)}
+ }
+}
+function showError(e){
+ let warning=document.getElementById('fisrImportError');
+ if(!warning){warning=document.createElement('div');warning.id='fisrImportError';warning.style.cssText='position:fixed;top:12px;left:12px;right:12px;z-index:99999;padding:15px;border-radius:10px;background:#842c30;color:white;font-weight:bold';document.body.append(warning)}
+ warning.textContent='Importazione FISR non riuscita: '+e.message;
+}
+function renderPreview(data){
+ if(previewPending)return;
+ previewPending=true;
+ const groups=groupRaces(data.gare);
+ const panel=el('section',undefined,'card fisr-import-card');panel.id='fisrDirectPanel';
+ const heading=el('h2','Importazione FISR · Anteprima');
+ const info=el('p',`${data.nome} · ID FISR ${data.id_fisr} · ${groups.length} prove (${data.gare.length} ID FISR)`);
+ const fields=data.campi_calendario||[];
+ const detail=el('p',`Data: ${fields[0]||'da verificare'} · Località: ${fields[2]||'da verificare'} · Organizzatore: ${fields[3]||'—'}`,'muted');
+ const categories=el('div',undefined,'fisr-category-list');
+ for(const category of [...new Set(groups.map(g=>g.category))]){
+  const block=el('details',undefined,'fisr-category');const summary=el('summary',`${category} · ${groups.filter(g=>g.category===category).length} prove`);block.append(summary);
+  for(const g of groups.filter(g=>g.category===category))block.append(el('div',g.name,'fisr-race-line'));
+  categories.append(block);
+ }
+ const actions=el('div',undefined,'actions');const prepare=el('button','Prepara gara nel gestionale');const cancel=el('button','Annulla','secondary');
+ const status=el('p','Le prove saranno tutte confermate per impostazione predefinita. Solo l’amministratore potrà modificarle.','muted');
+ actions.append(prepare,cancel);panel.append(heading,info,detail,categories,actions,status);
+ const clear=()=>{sessionStorage.removeItem(KEY);panel.remove();previewPending=false};cancel.onclick=clear;
+ const parseDate=value=>{const m=String(value||'').match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);if(!m)return '';const y=m[3]?(m[3].length===2?2000+Number(m[3]):Number(m[3])):new Date().getFullYear();const d=new Date(y,Number(m[2])-1,Number(m[1]));return d.getFullYear()===y&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[1])?`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:''};
+ prepare.onclick=async()=>{
+  prepare.disabled=true;status.textContent='Controllo dei trofei già importati…';
+  try{
+   const {data:existing,error}=await db.from('v2_event_config').select('event_id,value').eq('key','fisr_trophy_id');if(error)throw error;
+   const duplicate=(existing||[]).find(row=>String(row.value)===String(data.id_fisr));
+   if(duplicate){status.textContent='Questo trofeo FISR risulta già importato nel gestionale. Non verrà duplicato.';return}
+   const start=parseDate(fields[0]);
+   const deadline=parseDate(fields[4]);
+   const draft={title:data.nome,start_date:start,end_date:'',location:fields[2]||'',categories:[...new Set(groups.map(g=>g.category))],notes:`Fonte FISR · Trofeo ${data.id_fisr}\nOrganizzatore: ${fields[3]||'—'}\nScadenza iscrizioni FISR: ${fields[4]||'—'}\nTermine depennamenti: ${fields[5]||'—'}`,fisr:{id_fisr:String(data.id_fisr),gare:data.gare,groups},fisr_deadline:deadline};
+   document.dispatchEvent(new CustomEvent('juvenilia:create-from-calendar',{detail:draft}));
+   const tab=$('tab-event');if(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));tab.classList.remove('hidden')}
+   clear();
+  }catch(e){status.textContent='Impossibile controllare i duplicati: '+e.message;prepare.disabled=false}
  };
- cancel.onclick=()=>{sessionStorage.removeItem(KEY);panel.remove()};
- panel.append(heading,summary,detail,table,confirm,cancel,status);
- const mount=()=>{const app=document.getElementById('adminApp');if(app&&!app.classList.contains('hidden')){app.prepend(panel);return true}return false};
+ const mount=()=>{const app=$('adminApp');if(app&&!app.classList.contains('hidden')){app.prepend(panel);return true}return false};
  if(!mount()){const observer=new MutationObserver(()=>{if(mount())observer.disconnect()});observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']})}
 }
+
+// L'estensione può aggiungere il frammento FISR dopo l'avvio del modulo.
+window.addEventListener('hashchange',readIncoming);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',readIncoming,{once:true});
+else readIncoming();
+let checks=0;const incomingWatcher=setInterval(()=>{readIncoming();if(++checks>=30)clearInterval(incomingWatcher)},1000);
