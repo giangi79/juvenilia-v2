@@ -15,7 +15,6 @@ const groupRaces=races=>{
 function decode(){
  const hash=location.hash.slice(1);
  if(!hash.startsWith('fisr-import='))return null;
- history.replaceState(null,'',location.pathname+location.search);
  const raw=atob(decodeURIComponent(hash.slice('fisr-import='.length)));
  const value=JSON.parse(new TextDecoder().decode(Uint8Array.from(raw,c=>c.charCodeAt(0))));
  if(value.v!==1||!/^\d{1,12}$/.test(String(value.id_fisr))||!Array.isArray(value.gare)||!value.gare.length||value.gare.length>500)throw Error('Dati FISR non validi');
@@ -23,7 +22,18 @@ function decode(){
  return value;
 }
 let data;
-try{data=decode();if(data)sessionStorage.setItem(KEY,JSON.stringify(data));else data=JSON.parse(sessionStorage.getItem(KEY)||'null')}catch(e){console.warn('Importazione FISR',e)}
+try{
+ data=decode();
+ if(data){
+  sessionStorage.setItem(KEY,JSON.stringify(data));
+  history.replaceState(null,'',location.pathname+location.search);
+ }else data=JSON.parse(sessionStorage.getItem(KEY)||'null');
+}catch(e){
+ console.error('Importazione FISR: dati non leggibili',e);
+ const warning=document.createElement('div');warning.textContent='Importazione FISR non riuscita: '+e.message+' — riprova da FISR.';
+ warning.style.cssText='position:fixed;top:12px;left:12px;right:12px;z-index:99999;padding:15px;border-radius:10px;background:#842c30;color:white;font-weight:bold';
+ document.addEventListener('DOMContentLoaded',()=>document.body.prepend(warning),{once:true});
+}
 if(data){
  const groups=groupRaces(data.gare);
  const panel=el('section',undefined,'card fisr-import-card');panel.id='fisrDirectPanel';
