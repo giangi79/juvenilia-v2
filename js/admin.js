@@ -359,7 +359,7 @@ document.addEventListener('juvenilia:create-from-calendar',event=>{
   const season=seasons.find(s=>s.start_date<=calendarDraft.start_date&&s.end_date>=calendarDraft.start_date);
   if(season)$('eventSeasonInput').value=season.id;
   $('eventDescriptionInput').value=calendarDraft.notes||'';
-  if(calendarDraft.fisr_deadline)$('eventDeadlineInput').value=calendarDraft.fisr_deadline+'T23:59';
+  if(calendarDraft.fisr_deadline){const fisrClose=new Date(calendarDraft.fisr_deadline+'T23:59:00');fisrClose.setHours(fisrClose.getHours()-12);const pad=n=>String(n).padStart(2,'0');$('eventDeadlineInput').value=`${fisrClose.getFullYear()}-${pad(fisrClose.getMonth()+1)}-${pad(fisrClose.getDate())}T${pad(fisrClose.getHours())}:${pad(fisrClose.getMinutes())}`;}
   $('eventPublishedInput').checked=false;
   setTimeout(()=>{
     if(!calendarDraft)return;
