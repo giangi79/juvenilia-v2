@@ -1,0 +1,1 @@
+v0.9: Estensione Chrome FISR. Apri il trofeo, leggi le gare, apri anteprima, inserisci indirizzo HTTPS admin.html di Juvenilia. Il sito deve essere pubblicato via HTTPS e avere il modulo fisr-direct-import.js. La password resta necessaria per salvare su Supabase. Non pubblicare la versione di prova senza login.\n
