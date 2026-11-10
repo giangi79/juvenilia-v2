@@ -21,20 +21,33 @@ function decode(){
  if(!value.gare.every(g=>/^\d{1,12}$/.test(String(g.id_gara))&&['M','F'].includes(g.sesso)&&CATEGORY[String(g.categoria).toUpperCase()]&&String(g.descrizione||'').length<150))throw Error('Elenco prove non valido');
  return value;
 }
-let data;
-try{
- data=decode();
- if(data){
-  sessionStorage.setItem(KEY,JSON.stringify(data));
-  history.replaceState(null,'',location.pathname+location.search);
- }else data=JSON.parse(sessionStorage.getItem(KEY)||'null');
-}catch(e){
- console.error('Importazione FISR: dati non leggibili',e);
- const warning=document.createElement('div');warning.textContent='Importazione FISR non riuscita: '+e.message+' — riprova da FISR.';
- warning.style.cssText='position:fixed;top:12px;left:12px;right:12px;z-index:99999;padding:15px;border-radius:10px;background:#842c30;color:white;font-weight:bold';
- document.addEventListener('DOMContentLoaded',()=>document.body.prepend(warning),{once:true});
+let lastHandledHash='';
+function readIncoming(){
+ const hash=location.hash;
+ if(hash.startsWith('#fisr-import=') && hash!==lastHandledHash){
+  lastHandledHash=hash;
+  try{
+   const data=decode();
+   if(!data)return;
+   sessionStorage.setItem(KEY,JSON.stringify(data));
+   history.replaceState(null,'',location.pathname+location.search);
+   document.getElementById('fisrDirectPanel')?.remove();
+   renderPreview(data);
+  }catch(e){
+   lastHandledHash='';
+   console.error('Importazione FISR: dati non leggibili',e);
+   showError(e);
+  }
+ }else if(!hash.startsWith('#fisr-import=') && !document.getElementById('fisrDirectPanel')){
+  try{const saved=JSON.parse(sessionStorage.getItem(KEY)||'null');if(saved)renderPreview(saved)}catch(e){console.error('Anteprima FISR',e)}
+ }
 }
-if(data){
+function showError(e){
+ let warning=document.getElementById('fisrImportError');
+ if(!warning){warning=document.createElement('div');warning.id='fisrImportError';warning.style.cssText='position:fixed;top:12px;left:12px;right:12px;z-index:99999;padding:15px;border-radius:10px;background:#842c30;color:white;font-weight:bold';document.body.append(warning)}
+ warning.textContent='Importazione FISR non riuscita: '+e.message;
+}
+function renderPreview(data){
  const groups=groupRaces(data.gare);
  const panel=el('section',undefined,'card fisr-import-card');panel.id='fisrDirectPanel';
  const heading=el('h2','Importazione FISR · Anteprima');
@@ -69,3 +82,9 @@ if(data){
  const mount=()=>{const app=$('adminApp');if(app&&!app.classList.contains('hidden')){app.prepend(panel);return true}return false};
  if(!mount()){const observer=new MutationObserver(()=>{if(mount())observer.disconnect()});observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']})}
 }
+
+// L'estensione può aggiungere il frammento FISR dopo l'avvio del modulo.
+window.addEventListener('hashchange',readIncoming);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',readIncoming,{once:true});
+else readIncoming();
+let checks=0;const incomingWatcher=setInterval(()=>{readIncoming();if(++checks>=30)clearInterval(incomingWatcher)},1000);
