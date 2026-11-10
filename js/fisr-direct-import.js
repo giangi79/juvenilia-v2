@@ -22,6 +22,7 @@ function decode(){
  return value;
 }
 let lastHandledHash='';
+let previewPending=false;
 function readIncoming(){
  const hash=location.hash;
  if(hash.startsWith('#fisr-import=') && hash!==lastHandledHash){
@@ -38,7 +39,7 @@ function readIncoming(){
    console.error('Importazione FISR: dati non leggibili',e);
    showError(e);
   }
- }else if(!hash.startsWith('#fisr-import=') && !document.getElementById('fisrDirectPanel')){
+ }else if(!hash.startsWith('#fisr-import=') && !previewPending && !document.getElementById('fisrDirectPanel')){
   try{const saved=JSON.parse(sessionStorage.getItem(KEY)||'null');if(saved)renderPreview(saved)}catch(e){console.error('Anteprima FISR',e)}
  }
 }
@@ -48,6 +49,8 @@ function showError(e){
  warning.textContent='Importazione FISR non riuscita: '+e.message;
 }
 function renderPreview(data){
+ if(previewPending)return;
+ previewPending=true;
  const groups=groupRaces(data.gare);
  const panel=el('section',undefined,'card fisr-import-card');panel.id='fisrDirectPanel';
  const heading=el('h2','Importazione FISR · Anteprima');
@@ -63,7 +66,7 @@ function renderPreview(data){
  const actions=el('div',undefined,'actions');const prepare=el('button','Prepara gara nel gestionale');const cancel=el('button','Annulla','secondary');
  const status=el('p','Le prove saranno tutte confermate per impostazione predefinita. Solo l’amministratore potrà modificarle.','muted');
  actions.append(prepare,cancel);panel.append(heading,info,detail,categories,actions,status);
- const clear=()=>{sessionStorage.removeItem(KEY);panel.remove()};cancel.onclick=clear;
+ const clear=()=>{sessionStorage.removeItem(KEY);panel.remove();previewPending=false};cancel.onclick=clear;
  const parseDate=value=>{const m=String(value||'').match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);if(!m)return '';const y=m[3]?(m[3].length===2?2000+Number(m[3]):Number(m[3])):new Date().getFullYear();const d=new Date(y,Number(m[2])-1,Number(m[1]));return d.getFullYear()===y&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[1])?`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:''};
  prepare.onclick=async()=>{
   prepare.disabled=true;status.textContent='Controllo dei trofei già importati…';
