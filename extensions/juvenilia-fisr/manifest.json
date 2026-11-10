@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Juvenilia - Importatore FISR",
+  "version": "0.9.0",
+  "description": "Lettura gare FISR e passaggio diretto a Juvenilia via HTTPS, con conferma amministratore.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.fisr.info/*",
+    "https://fisr.info/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.fisr.info/*",
+        "https://fisr.info/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_title": "Juvenilia FISR",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
