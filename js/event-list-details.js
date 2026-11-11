@@ -172,7 +172,9 @@ function openQuickRegistrationConfirmation(event,athlete){
   dialog.className='quick-registration-dialog quick-registration-confirm-dialog';
   dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">CONFERMA ISCRIZIONE</div><h2>Confermi l’iscrizione?</h2><p class="quick-registration-selected-name"></p><div class="quick-registration-day-picker"></div><div class="quick-registration-companion-picker"></div><p class="quick-registration-state is-confirmation" aria-live="polite"></p><div class="quick-registration-actions"><button type="button" class="quick-registration-confirm"><i class="fas fa-check"></i> Conferma iscrizione</button><button value="cancel" class="quick-registration-cancel">Annulla</button></div></form>';
   dialog.querySelector('.quick-registration-selected-name').textContent=athlete.full_name||'Atleta';
-  appendQuickFisrProves(dialog.querySelector('.quick-registration-selected-name'),event,athlete);
+  const selectedName=dialog.querySelector('.quick-registration-selected-name');
+  const proofsSlot=document.createElement('div');selectedName.after(proofsSlot);
+  appendQuickFisrProves(proofsSlot,event,athlete);
   const dayPicker=dialog.querySelector('.quick-registration-day-picker');
   if(days.length){
     const title=document.createElement('strong');
