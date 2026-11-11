@@ -4377,3 +4377,10 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
   .hero .hero-actions > a.admin-link{order:3}
   .hero > div:first-child{padding-top:64px!important}
 }
+
+/* Prove FISR nell'iscrizione veloce: visibili per categoria, senza controlli modificabili */
+.quick-fisr-proves{display:flex;flex-direction:column;gap:3px;margin:7px 0 2px;padding:9px 11px;border-radius:10px;background:#eaf4fb;color:#163951;text-align:left;font-size:.86rem;line-height:1.4}
+.quick-fisr-proves strong{font-size:.78rem;color:#205b82}
+.quick-fisr-proves span{font-weight:500;overflow-wrap:anywhere}
+.quick-registration-result .quick-fisr-proves{width:100%;box-sizing:border-box;margin-top:5px}
+.quick-registration-confirm-dialog .quick-fisr-proves{margin-bottom:12px}
