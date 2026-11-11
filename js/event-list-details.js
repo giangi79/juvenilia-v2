@@ -136,6 +136,35 @@ function showQuickRegistrationCelebration(){
   },1550);
 }
 
+
+// Mostra le prove FISR della categoria senza consentire modifiche agli atleti.
+function fisrProvesForAthlete(event,athlete){
+  const races=Array.isArray(event.config?.fisr_races)?event.config.fisr_races:[];
+  const codeMap={GI:'GIOVANISSIMI',ES:'ESORDIENTI',R1:'R12',RA:'RAGAZZI',AL:'ALLIEVI',JU:'JUNIOR',SE:'SENIOR'};
+  const category=String(athlete.category||'').trim().toUpperCase();
+  const found=new Map();
+  for(const race of races){
+    if(codeMap[String(race.categoria||'').toUpperCase()]!==category)continue;
+    const name=String(race.descrizione||'').trim();
+    if(name)found.set(category+'|'+name.toLocaleLowerCase('it'),name);
+  }
+  if(!found.size)return [];
+  const saved=event.config?.fisr_athlete_proves||{};
+  const selection=saved[athlete.athlete_id];
+  const keys=Array.isArray(selection)?selection:[...found.keys()];
+  return [...found].filter(([key])=>keys.includes(key)).map(([,name])=>name);
+}
+function appendQuickFisrProves(parent,event,athlete){
+  const races=event.config?.fisr_races;
+  if(!Array.isArray(races)||!races.length)return;
+  const names=fisrProvesForAthlete(event,athlete);
+  const box=document.createElement('div');
+  box.className='quick-fisr-proves';
+  const title=document.createElement('strong');title.textContent='Prove '+String(athlete.category||'').trim();
+  const details=document.createElement('span');details.textContent=names.length?names.join(' · '):'Nessuna prova prevista';
+  box.append(title,details);parent.append(box);
+}
+
 function openQuickRegistrationConfirmation(event,athlete){
   const configuredDays=event.config?.athlete_weekdays??event.config?.event_days??[];
   const days=Array.isArray(configuredDays)?configuredDays.filter(Boolean):[];
@@ -143,6 +172,7 @@ function openQuickRegistrationConfirmation(event,athlete){
   dialog.className='quick-registration-dialog quick-registration-confirm-dialog';
   dialog.innerHTML='<form method="dialog" class="quick-registration-card"><button class="quick-registration-close" value="cancel" aria-label="Chiudi">×</button><div class="section-kicker">CONFERMA ISCRIZIONE</div><h2>Confermi l’iscrizione?</h2><p class="quick-registration-selected-name"></p><div class="quick-registration-day-picker"></div><div class="quick-registration-companion-picker"></div><p class="quick-registration-state is-confirmation" aria-live="polite"></p><div class="quick-registration-actions"><button type="button" class="quick-registration-confirm"><i class="fas fa-check"></i> Conferma iscrizione</button><button value="cancel" class="quick-registration-cancel">Annulla</button></div></form>';
   dialog.querySelector('.quick-registration-selected-name').textContent=athlete.full_name||'Atleta';
+  appendQuickFisrProves(dialog.querySelector('.quick-registration-selected-name'),event,athlete);
   const dayPicker=dialog.querySelector('.quick-registration-day-picker');
   if(days.length){
     const title=document.createElement('strong');
@@ -286,6 +316,7 @@ function openRegistrationDialog(event,registrations){
       const name=document.createElement('strong');name.textContent=athlete.full_name||'Atleta';
       const details=document.createElement('span');details.textContent=[athlete.category,athlete.race_number!=null?'N. '+athlete.race_number:''].filter(Boolean).join(' · ');
       button.append(name,details);
+      appendQuickFisrProves(button,event,athlete);
       button.onclick=()=>{
         dialog.close();
         openQuickRegistrationConfirmation(event,athlete);
