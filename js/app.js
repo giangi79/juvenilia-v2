@@ -116,7 +116,7 @@ function renderRegistrations(regs,cfg){const box=document.getElementById('regist
  if(found.size){const info=document.createElement('div');info.className='fisr-public-proves';
  const stored=cfg.fisr_athlete_proves||{};const keys=Array.isArray(stored[r.athlete_id])?stored[r.athlete_id]:[...found.keys()];
  const selected=[...found].filter(([key])=>keys.includes(key)).map(([,name])=>name);
- info.textContent=`Prove previste (sola lettura): ${selected.length?selected.join(' · '):'Nessuna prova confermata'}`;
+ info.textContent=`Prove previste: ${selected.length?selected.join(' · '):'Nessuna prova confermata'}`;
  detail.append(info)
  }
  }
