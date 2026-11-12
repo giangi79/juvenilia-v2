@@ -1,4 +1,4 @@
-<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Juvenilia · Test calendario FISR</title><style>body{margin:0;font:16px system-ui;background:#102c44;color:#f4f8ff}main{max-width:850px;margin:auto;padding:24px}button{background:#3d83ae;color:white;border:0;border-radius:12px;padding:14px;font-weight:700;font-size:16px}input{padding:12px;border-radius:10px;border:1px solid #9fb3c3;width:100%;box-sizing:border-box;font-size:16px}.item{background:#1b405e;border:1px solid #48708e;border-radius:12px;padding:15px;margin:10px 0}.muted{color:#bdd3e3;font-size:14px}a{color:#9bd7ff}h1{font-size:26px}</style></head><body><main><h1>Calendario FISR · Prova iPhone</h1><p>Ricerca automatica di trofei e ID. Nessuna gara viene creata.</p><button id="load">Carica calendario FISR</button><button id="authCheck" style="margin-left:8px;background:#526f88">Verifica accesso FISR</button><p id="authResult" class="muted" aria-live="polite"></p><button id="preflight" style="background:#526f88;margin:8px 0">Controlla sessione FISR</button><p id="preflightResult" class="muted" aria-live="polite"></p><section class="item" id="fisrLoginArea" style="margin:16px 0"><h2 style="margin-top:0;font-size:21px">Accesso FISR da iPhone</h2><p class="muted">Apri il login ufficiale FISR e accedi direttamente sul sito federale. Le credenziali non transitano da Juvenilia.</p><a href="https://www.fisr.info/attivita/login.php" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#3d83ae;color:white;text-decoration:none;border-radius:12px;padding:14px;font-weight:700">Apri login ufficiale FISR</a><p class="muted">Dopo l'accesso torna qui. Il collegamento automatico delle prove non è ancora disponibile: Safari non condivide la sessione FISR con Juvenilia.</p></section><p id="status" aria-live="polite"></p><div id="results" hidden><input id="search" type="search" placeholder="Cerca gara, città o ID"><p id="count"></p><div id="items"></div></div></main><script>
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Juvenilia · Test calendario FISR</title><style>body{margin:0;font:16px system-ui;background:#102c44;color:#f4f8ff}main{max-width:850px;margin:auto;padding:24px}button{background:#3d83ae;color:white;border:0;border-radius:12px;padding:14px;font-weight:700;font-size:16px}input{padding:12px;border-radius:10px;border:1px solid #9fb3c3;width:100%;box-sizing:border-box;font-size:16px}.item{background:#1b405e;border:1px solid #48708e;border-radius:12px;padding:15px;margin:10px 0}.muted{color:#bdd3e3;font-size:14px}a{color:#9bd7ff}h1{font-size:26px}</style></head><body><main><h1>Calendario FISR · Prova iPhone</h1><p>Ricerca automatica di trofei e ID. Nessuna gara viene creata.</p><button id="load">Carica calendario FISR</button><button id="authCheck" style="margin-left:8px;background:#526f88">Verifica accesso FISR</button><p id="authResult" class="muted" aria-live="polite"></p><button id="preflight" style="background:#526f88;margin:8px 0">Controlla sessione FISR</button><p id="preflightResult" class="muted" aria-live="polite"></p><section class="item" id="fisrLoginArea" style="margin:16px 0"><h2 style="margin-top:0;font-size:21px">Accesso FISR da iPhone</h2><p class="muted">Apri il login ufficiale FISR e accedi direttamente sul sito federale. Le credenziali non transitano da Juvenilia.</p><a href="https://www.fisr.info/attivita/login.php" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#3d83ae;color:white;text-decoration:none;border-radius:12px;padding:14px;font-weight:700">Apri login ufficiale FISR</a><p class="muted">Dopo l'accesso torna qui. Il collegamento automatico delle prove non è ancora disponibile: Safari non condivide la sessione FISR con Juvenilia.</p></section><section class="item" id="htmlImport"><h2 style="margin-top:0;font-size:21px">Anteprima prove da HTML FISR</h2><p class="muted">Carica il file HTML o TXT della risposta FISR già autenticata. L'elaborazione avviene solo sul dispositivo: nessun dato degli atleti viene inviato al server. Nessuna iscrizione viene effettuata.</p><label for="fisrFile" style="display:block;margin-bottom:8px">File risposta FISR (.html o .txt)</label><input id="fisrFile" type="file" accept=".html,.htm,.txt,text/html,text/plain" style="background:white;color:#102c44"><p id="fisrParseStatus" aria-live="polite"></p><div id="fisrPreview" hidden><p id="fisrSummary"></p><div id="fisrRaces"></div><button id="fisrDownload" type="button" style="margin-top:14px">Scarica anteprima JSON (solo prove)</button></div></section><p id="status" aria-live="polite"></p><div id="results" hidden><input id="search" type="search" placeholder="Cerca gara, città o ID"><p id="count"></p><div id="items"></div></div></main><script>
 const endpoint='https://jnfnfszekfstuoiemkgf.supabase.co/functions/v1/fisr-calendar-preview';
 const status=document.getElementById('status'),results=document.getElementById('results'),items=document.getElementById('items'),search=document.getElementById('search'),count=document.getElementById('count');let events=[];
 function render(){items.replaceChildren();const q=search.value.trim().toLocaleLowerCase('it');const filtered=events.filter(e=>[e.nome,e.luogo,e.id_fisr,e.data].some(v=>String(v||'').toLocaleLowerCase('it').includes(q)));count.textContent=filtered.length+' trofei';for(const e of filtered){const card=document.createElement('div');card.className='item';const title=document.createElement('strong');title.textContent=e.nome;const info=document.createElement('p');info.className='muted';info.textContent=[e.data,e.luogo,'ID FISR '+e.id_fisr].filter(Boolean).join(' · ');const link=document.createElement('a');link.href=e.url;link.target='_blank';link.rel='noopener';link.textContent='Apri scheda FISR';const probe=document.createElement('button');probe.textContent='Leggi prove FISR';probe.style.cssText='display:block;margin:12px 0 0;font-size:14px;padding:10px';const output=document.createElement('div');probe.onclick=async()=>{probe.disabled=true;output.textContent='Verifica accesso alle prove…';try{const response=await fetch('https://jnfnfszekfstuoiemkgf.supabase.co/functions/v1/fisr-races-preview?id='+encodeURIComponent(e.id_fisr),{cache:'no-store'});const data=await response.json();output.replaceChildren();if(data.error||!data.accessible){output.textContent=data.error||data.reason||'Prove non disponibili senza accesso FISR';return}const summary=document.createElement('p');summary.textContent=data.count+' gare FISR riconosciute';output.append(summary);for(const race of data.gare||[]){const line=document.createElement('div');line.className='muted';line.textContent=[race.categoria,race.sesso,race.descrizione,'ID '+race.id_gara].join(' · ');output.append(line)}if(data.warning){const warning=document.createElement('p');warning.textContent=data.warning;output.append(warning)}if(data.diagnostic){const diagnostic=document.createElement('p');diagnostic.className='muted';diagnostic.textContent='Diagnostica: '+Object.entries(data.diagnostic).map(([k,v])=>k+'='+v).join(' · ');output.append(diagnostic)}}catch(err){output.textContent='Errore verifica: '+err.message}finally{probe.disabled=false}};card.append(title,info,link,probe,output);items.append(card)}}
@@ -6,4 +6,68 @@ search.oninput=render;
 document.getElementById('preflight').onclick=async()=>{const el=document.getElementById('preflightResult');el.textContent='Controllo in corso…';try{const r=await fetch('https://jnfnfszekfstuoiemkgf.supabase.co/functions/v1/fisr-login-preflight',{cache:'no-store'});const d=await r.json();if(!r.ok||d.error)throw Error(d.error||'HTTP '+r.status);el.textContent='Login FISR: HTTP '+d.httpStatus+' · Modulo '+(d.formFound?'trovato':'non trovato')+' · Campi '+d.fields.join(', ')+' · Cookie iniziale '+(d.sessionCookieOffered?'presente':'assente')+' · HttpOnly '+d.sessionCookieFlags.httpOnly+' · Secure '+d.sessionCookieFlags.secure+'. Nessuna credenziale inviata.'}catch(e){el.textContent='Verifica non riuscita: '+e.message}};
 document.getElementById('authCheck').onclick=async()=>{const output=document.getElementById('authResult');output.textContent='Verifica della pagina di autenticazione in corso…';try{const r=await fetch('https://jnfnfszekfstuoiemkgf.supabase.co/functions/v1/fisr-frame-diagnostic',{cache:'no-store'});const data=await r.json();if(data.error)throw Error(data.error);output.textContent='Iframe trovati: '+(data.frames||[]).map(f=>f.src||'(senza src)').join(', ')+' · '+(data.results||[]).map(f=>'Pagina '+f.src+' · HTTP '+f.httpStatus+' · Password '+(f.passwordField?'presente':'assente')+' · Moduli '+f.forms.length+' · Login citato '+f.loginMentions+' volte').join(' | ');}catch(e){output.textContent='Verifica non riuscita: '+e.message}};
 document.getElementById('load').onclick=async()=>{status.textContent='Lettura calendario FISR in corso…';results.hidden=true;try{const r=await fetch(endpoint,{cache:'no-store'});const data=await r.json();if(!r.ok||data.error)throw Error(data.error||'HTTP '+r.status);events=data.events||[];status.textContent=events.length?'Calendario letto correttamente.':'La pagina è stata raggiunta ma non sono stati riconosciuti ID: serve adattare la lettura FISR.';results.hidden=false;render()}catch(e){status.textContent='Impossibile leggere il calendario: '+e.message}};
+
+let fisrExtracted=null;
+function parseFisrHtml(source){
+ const doc=new DOMParser().parseFromString(source,'text/html');
+ const form=doc.querySelector('form[action*="corsa_iscrizioni_store.php"]');
+ if(!form)throw Error('Modulo gare FISR non trovato: verifica di aver caricato la risposta della pagina iscrizioni.');
+ const trophyId=form.querySelector('input[name="id"]')?.value||'';
+ if(!/^\d{1,8}$/.test(trophyId))throw Error('ID trofeo non valido.');
+ const map=new Map();let athletes=0;
+ for(const tr of form.querySelectorAll('tr')){
+  const td=tr.querySelectorAll(':scope > td');
+  if(td.length<6)continue;
+  const category=td[3].textContent.trim().toUpperCase();
+  const sex=td[4].textContent.trim().toUpperCase();
+  if(!/^[A-Z0-9]{1,4}$/.test(category)||!['M','F'].includes(sex))continue;
+  let found=false;
+  for(const cb of td[5].querySelectorAll('input[type="checkbox"]')){
+   const match=/^cb_(\d+)_(\d+)$/.exec(cb.name||cb.id||'');
+   if(!match)continue;
+   let desc='';
+   for(let node=cb.nextSibling;node;node=node.nextSibling){
+    if(node.nodeType===1&&node.matches?.('input[type="checkbox"]'))break;
+    desc+=node.textContent||'';
+   }
+   desc=desc.replace(/^[\s|]+|[\s|]+$/g,'').replace(/\s+/g,' ').trim();
+   if(!desc)continue;
+   const key=match[1];
+   const existing=map.get(key);
+   if(existing&&(existing.categoria!==category||existing.sesso!==sex||existing.prova!==desc))throw Error('ID gara '+key+' presenta dati discordanti.');
+   map.set(key,{id_gara:key,categoria:category,sesso:sex,prova:desc});
+   found=true;
+  }
+  if(found)athletes++;
+ }
+ if(!map.size)throw Error('Nessuna prova riconosciuta nel file.');
+ return {id_fisr:trophyId,numero_atleti_righe:athletes,gare:[...map.values()].sort((a,b)=>a.categoria.localeCompare(b.categoria,'it')||a.prova.localeCompare(b.prova,'it')||a.sesso.localeCompare(b.sesso,'it'))};
+}
+document.getElementById('fisrFile').addEventListener('change',async e=>{
+ const statusEl=document.getElementById('fisrParseStatus'),preview=document.getElementById('fisrPreview');
+ preview.hidden=true;fisrExtracted=null;
+ const file=e.target.files?.[0];if(!file)return;
+ if(file.size>4*1024*1024){statusEl.textContent='File troppo grande (massimo 4 MB).';return}
+ try{
+  const source=await file.text();
+  const data=parseFisrHtml(source);
+  fisrExtracted=data;
+  const unique=new Set(data.gare.map(g=>g.categoria+'|'+g.prova));
+  document.getElementById('fisrSummary').textContent='Trofeo '+data.id_fisr+' · '+data.gare.length+' ID gare FISR · '+unique.size+' prove per categoria (M/F unite) · '+data.numero_atleti_righe+' righe atleti analizzate, non esportate.';
+  const target=document.getElementById('fisrRaces');target.replaceChildren();
+  for(const [category,group] of Object.entries(Object.groupBy?Object.groupBy(data.gare,g=>g.categoria):data.gare.reduce((o,g)=>((o[g.categoria]??=[]).push(g),o),{}))){
+   const heading=document.createElement('h3');heading.textContent='Categoria '+category;target.append(heading);
+   for(const race of group){
+    const line=document.createElement('div');line.className='muted';line.style.padding='5px 0';line.textContent=race.prova+' · '+race.sesso+' · ID '+race.id_gara;target.append(line);
+   }
+  }
+  preview.hidden=false;statusEl.textContent='Lettura completata sul dispositivo. Controlla le prove prima di esportare.';
+ }catch(err){statusEl.textContent='Errore: '+err.message}
+});
+document.getElementById('fisrDownload').onclick=()=>{
+ if(!fisrExtracted)return;
+ const payload={id_fisr:fisrExtracted.id_fisr,gare:fisrExtracted.gare};
+ const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+ const a=document.createElement('a');a.href=url;a.download='fisr-prove-'+payload.id_fisr+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 </script></body></html>
