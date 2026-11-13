@@ -123,24 +123,38 @@ async function boot(){
     showAdmin();
     await loadAll();
     await refreshTimerSetup();
+    restoreAdminNavigation();
   }else{
     showLogin();
   }
 }
 function showLogin(){$('loginCard').classList.remove('hidden');$('adminApp').classList.add('hidden')}
 function showAdmin(){$('loginCard').classList.add('hidden');$('adminApp').classList.remove('hidden');db.auth.getUser().then(({data})=>$('adminIdentity').textContent=data.user?.email||'Admin')}
-$('loginForm').onsubmit=async e=>{e.preventDefault();$('loginError').textContent='';const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginError').textContent=error.message;return}if(!(await isAdmin())){await db.auth.signOut();$('loginError').textContent='Utente non autorizzato come amministratore.';return}showAdmin();await loadAll();await refreshTimerSetup()};
+$('loginForm').onsubmit=async e=>{e.preventDefault();$('loginError').textContent='';const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginError').textContent=error.message;return}if(!(await isAdmin())){await db.auth.signOut();$('loginError').textContent='Utente non autorizzato come amministratore.';return}showAdmin();await loadAll();await refreshTimerSetup();restoreAdminNavigation()};
 $('logoutBtn').onclick=async()=>{await db.auth.signOut();location.reload()};
+const ADMIN_TAB_KEY='juvenilia_admin_active_tab';
+const ADMIN_SETTINGS_KEY='juvenilia_admin_settings_panel';
+const ADMIN_EVENT_KEY='juvenilia_admin_active_event';
+function restoreAdminNavigation(){
+  const name=sessionStorage.getItem(ADMIN_TAB_KEY)||'event';
+  const button=[...document.querySelectorAll('#tabs button')].find(b=>b.dataset.tab===name);
+  if(button)button.click();
+}
 function openAdminTab(name){
+  sessionStorage.setItem(ADMIN_TAB_KEY,name);
   document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));
   document.querySelectorAll('.tab').forEach(t=>t.classList.add('hidden'));
   const target=$('tab-'+name);
   if(target)target.classList.remove('hidden');
-  if(name==='settings')openSettingsPanel('config');
+  if(name==='settings')openSettingsPanel(sessionStorage.getItem(ADMIN_SETTINGS_KEY)||'config');
 }
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>openAdminTab(b.dataset.tab));
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=event=>{
+  openAdminTab(b.dataset.tab);
+  if(event.isTrusted)location.reload();
+});
 
 function openSettingsPanel(name){
+  sessionStorage.setItem(ADMIN_SETTINGS_KEY,name);
   document.querySelectorAll('.settings-choice').forEach(b=>b.classList.toggle('active',b.dataset.settingsPanel===name));
   document.querySelectorAll('.settings-panel').forEach(p=>p.classList.add('hidden'));
   const panel=document.querySelector(`.settings-panel[data-settings-section="${name}"]`);
@@ -153,12 +167,13 @@ function openSettingsPanel(name){
     setTimeout(()=>refreshTimerSetup(),0);
   }
 }
-document.querySelectorAll('.settings-choice').forEach(b=>b.onclick=()=>openSettingsPanel(b.dataset.settingsPanel));
+document.querySelectorAll('.settings-choice').forEach(b=>b.onclick=event=>{openSettingsPanel(b.dataset.settingsPanel);if(event.isTrusted)location.reload()});
 
 async function loadAll(){
   await loadSeasons();
-  await loadEvents();
+  await loadEvents(currentEvent?.id||sessionStorage.getItem(ADMIN_EVENT_KEY)||'');
   await Promise.all([loadAthletes(),loadRegistrations(),loadTimers(),loadConfig()]);renderStats();
+  if(currentEvent)document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId:currentEvent.id}}));
 
   populateTimerEventSelect();
   renderTimerCategoryChecks();
@@ -254,6 +269,7 @@ function populateLinkedEventSelects(selectedId=currentEvent?.id||''){
 }
 
 async function selectAdminEvent(eventId,{reload=true}={}){
+  if(eventId)sessionStorage.setItem(ADMIN_EVENT_KEY,eventId);else sessionStorage.removeItem(ADMIN_EVENT_KEY);
   const found=events.find(e=>e.id===eventId);
   if(!found){
     currentEvent=null;
