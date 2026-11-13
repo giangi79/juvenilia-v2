@@ -82,7 +82,7 @@ function renderPreview(data){
    clear();
   }catch(e){status.textContent='Impossibile controllare i duplicati: '+e.message;prepare.disabled=false}
  };
- const mount=()=>{const app=$('adminApp');if(app&&!app.classList.contains('hidden')){app.prepend(panel);return true}return false};
+ const mount=()=>{const app=$('adminApp');if(app&&!app.classList.contains('hidden')){app.prepend(panel);requestAnimationFrame(()=>{if(panel.isConnected)panel.scrollIntoView({behavior:'smooth',block:'start'})});return true}return false};
  if(!mount()){const observer=new MutationObserver(()=>{if(mount())observer.disconnect()});observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']})}
 }
 
