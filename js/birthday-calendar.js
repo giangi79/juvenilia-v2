@@ -109,7 +109,7 @@ async function loadCalendar(){
   }finally{refresh.disabled=false}
 }
 
-document.querySelector('[data-tab="birthdays"]')?.addEventListener('click',()=>{if(!loaded)loadCalendar()});
+document.querySelector('[data-tab="birthdays"]')?.addEventListener('click',()=>loadCalendar());
 $('birthdayCalendarRefresh')?.addEventListener('click',loadCalendar);
 $('birthdayCalendarRange')?.addEventListener('change',()=>{loaded=false;loadCalendar()});
 document.addEventListener('juvenilia:athletes-changed',()=>{loaded=false});
