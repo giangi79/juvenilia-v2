@@ -120,17 +120,17 @@ async function isAdmin(){
 }
 async function boot(){
   if(await isAdmin()){
+    restoreAdminNavigation();
     showAdmin();
     await loadAll();
     await refreshTimerSetup();
-    restoreAdminNavigation();
   }else{
     showLogin();
   }
 }
 function showLogin(){$('loginCard').classList.remove('hidden');$('adminApp').classList.add('hidden')}
 function showAdmin(){$('loginCard').classList.add('hidden');$('adminApp').classList.remove('hidden');db.auth.getUser().then(({data})=>$('adminIdentity').textContent=data.user?.email||'Admin')}
-$('loginForm').onsubmit=async e=>{e.preventDefault();$('loginError').textContent='';const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginError').textContent=error.message;return}if(!(await isAdmin())){await db.auth.signOut();$('loginError').textContent='Utente non autorizzato come amministratore.';return}showAdmin();await loadAll();await refreshTimerSetup();restoreAdminNavigation()};
+$('loginForm').onsubmit=async e=>{e.preventDefault();$('loginError').textContent='';const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){$('loginError').textContent=error.message;return}if(!(await isAdmin())){await db.auth.signOut();$('loginError').textContent='Utente non autorizzato come amministratore.';return}restoreAdminNavigation();showAdmin();await loadAll();await refreshTimerSetup()};
 $('logoutBtn').onclick=async()=>{await db.auth.signOut();location.reload()};
 const ADMIN_TAB_KEY='juvenilia_admin_active_tab';
 const ADMIN_SETTINGS_KEY='juvenilia_admin_settings_panel';
@@ -150,7 +150,7 @@ function openAdminTab(name){
 }
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=event=>{
   openAdminTab(b.dataset.tab);
-  if(event.isTrusted)location.reload();
+  if(event.isTrusted)refreshAdminTab(b.dataset.tab);
 });
 
 function openSettingsPanel(name){
@@ -167,7 +167,23 @@ function openSettingsPanel(name){
     setTimeout(()=>refreshTimerSetup(),0);
   }
 }
-document.querySelectorAll('.settings-choice').forEach(b=>b.onclick=event=>{openSettingsPanel(b.dataset.settingsPanel);if(event.isTrusted)location.reload()});
+document.querySelectorAll('.settings-choice').forEach(b=>b.onclick=event=>{openSettingsPanel(b.dataset.settingsPanel);if(event.isTrusted)refreshAdminSettings(b.dataset.settingsPanel)});
+
+function notifyCurrentEvent(){document.dispatchEvent(new CustomEvent('juvenilia:event-changed',{detail:{eventId:currentEvent?.id||null}}))}
+async function refreshAdminSettings(name){
+  try{if(name==='config')await loadConfig();else if(name==='advanced')notifyCurrentEvent()}
+  catch(error){console.error('Aggiornamento impostazioni:',error)}
+}
+async function refreshAdminTab(name){
+  try{
+    if(name==='event'){await loadEvents();notifyCurrentEvent()}
+    else if(name==='athletes'){await loadSeasons();await loadAthletes()}
+    else if(name==='registrations'){await loadRegistrations();notifyCurrentEvent()}
+    else if(name==='settings')await refreshAdminSettings(sessionStorage.getItem(ADMIN_SETTINGS_KEY)||'config');
+    else if(name==='exports'){await Promise.all([loadRegistrations(),loadConfig()]);renderStats()}
+    // Calendario e compleanni si aggiornano tramite i propri pulsanti di navigazione.
+  }catch(error){console.error('Aggiornamento sezione admin:',error)}
+}
 
 async function loadAll(){
   await loadSeasons();
@@ -620,7 +636,9 @@ $('addAthleteBtn').onclick=async()=>{
 
 async function loadRegistrations(){
   if(!currentEvent){registrations=[];selectedRegistrationIds.clear();renderRegistrations();return}
-  const {data,error}=await db.from('v2_event_registrations').select('*, athlete:v2_athletes(*)').eq('event_id',currentEvent.id).order('created_at');
+  const requestedEventId=currentEvent.id;
+  const {data,error}=await db.from('v2_event_registrations').select('*, athlete:v2_athletes(*)').eq('event_id',requestedEventId).order('created_at');
+  if(currentEvent?.id!==requestedEventId)return;
   if(error)return toast(error.message);
   registrations=data||[];
   selectedRegistrationIds=new Set([...selectedRegistrationIds].filter(id=>registrations.some(r=>r.id===id)));
@@ -678,7 +696,7 @@ async function loadTimers(){if(!currentEvent){timers=[];renderTimers();return}co
 function renderTimers(){const _timerList=$('timersList');if(!_timerList)return;_timerList.replaceChildren();timers.forEach(t=>{const row=document.createElement('div');row.className='timer-item';const text=document.createElement('div');text.textContent=`${t.label} — ${formatDate(t.deadline)} — ${(t.categories||[]).join(', ')||'Tutte le categorie'}`;const del=document.createElement('button');del.textContent='Elimina';del.className='danger';del.onclick=async()=>{if(!confirm('Eliminare questo timer?'))return;const {error}=await db.from('v2_event_timers').delete().eq('id',t.id);if(error)return toast(error.message);await loadTimers()};row.append(text,del);_timerList.append(row)})}
 // Vecchio handler Timer rimosso: la gestione è affidata alla nuova scheda Scadenze per categoria.
 
-async function loadConfig(){if(!currentEvent){configRows=[];fillConfig();return}const {data,error}=await db.from('v2_event_config').select('*').eq('event_id',currentEvent.id);if(error)return toast(error.message);configRows=data||[];fillConfig();renderStats()}
+async function loadConfig(){if(!currentEvent){configRows=[];fillConfig();return}const requestedEventId=currentEvent.id;const {data,error}=await db.from('v2_event_config').select('*').eq('event_id',requestedEventId);if(currentEvent?.id!==requestedEventId)return;if(error)return toast(error.message);configRows=data||[];fillConfig();renderStats()}
 function cfg(k,d=null){return configRows.find(x=>x.key===k)?.value??d}
 function fillConfig(){
   $('cfgSubtitle').value=cfg('subtitle','');
@@ -867,7 +885,7 @@ $('whatsappBtn').onclick=()=>{
 };
 
 db.auth.onAuthStateChange(()=>{});
-boot();
+boot().catch(error=>{showLogin();$('loginError').textContent='Impossibile verificare l’accesso: '+error.message});
 let timerEventId=null;
 let timerEvents=[];
 let timerCategories=[];
