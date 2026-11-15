@@ -1176,61 +1176,48 @@ document.querySelector('[data-tab="timers"]')?.addEventListener('click',()=>{
  // le scadenze vengono caricate solo dopo login Admin o quando si apre la scheda.
 
 
-/* Pull-to-refresh Admin: gestisce anche i contenitori scrollabili su iOS. */
+/* Pull-to-refresh Admin: stesso gesto della Dashboard pubblica. */
 {
+  let pullStartY=0,pullDistance=0,pullArmed=false;
+  const THRESHOLD=78;
+  const isAtTop=()=>Math.max(0,window.scrollY||0,document.documentElement?.scrollTop||0,document.body?.scrollTop||0)<=1;
   const hint=document.createElement('div');
+  hint.className='pull-refresh-hint';
   hint.setAttribute('role','status');
   hint.setAttribute('aria-live','polite');
-  hint.style.cssText='position:fixed;z-index:2000;top:calc(8px + env(safe-area-inset-top, 0px));left:50%;transform:translateX(-50%);padding:8px 14px;border-radius:20px;background:#123d5d;color:#fff;font:700 14px Inter,sans-serif;box-shadow:0 2px 10px #0005;display:none;white-space:nowrap;pointer-events:none';
+  hint.innerHTML='<i class="fas fa-arrow-down" aria-hidden="true"></i><span>Trascina per aggiornare</span>';
   document.body.append(hint);
-  let start=null,ready=false,busy=false,hideTimer;
-  function show(message){clearTimeout(hideTimer);hint.textContent=message;hint.style.display='block'}
-  function hide(){clearTimeout(hideTimer);hideTimer=setTimeout(()=>{hint.style.display='none'},1200)}
-  function atTop(target){
-    if(window.scrollY>2||document.documentElement.scrollTop>2)return false;
-    for(let el=target;el&&el!==document.body;el=el.parentElement){
-      if(el.scrollTop>2&&el.scrollHeight>el.clientHeight+2)return false;
-    }
-    return true;
-  }
-  function canStart(target){
-    if(!$('adminApp')||$('adminApp').classList.contains('hidden')||!atTop(target))return false;
-    if(target.closest('input,select,textarea,button,a,[contenteditable="true"],[role="button"]'))return false;
-    return true;
-  }
-  document.addEventListener('touchstart',e=>{
-    if(busy||e.touches.length!==1||!canStart(e.target)){start=null;return}
-    start={x:e.touches[0].clientX,y:e.touches[0].clientY,target:e.target};ready=false;
+  const style=document.createElement('style');
+  style.textContent='.pull-refresh-hint{position:fixed;z-index:2000;top:calc(12px + env(safe-area-inset-top,0px));left:50%;display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:#123c62;color:#fff;box-shadow:0 7px 18px #0004;font-size:.86rem;font-weight:800;pointer-events:none;opacity:0;transform:translate(-50%,-18px);transition:opacity .16s,transform .16s}.pull-refresh-hint.visible{opacity:1;transform:translate(-50%,0)}.pull-refresh-hint.ready{background:#0878cf}.pull-refresh-hint.ready i{transform:rotate(180deg)}';
+  document.head.append(style);
+  const clear=()=>hint.classList.remove('visible','ready');
+  window.addEventListener('touchstart',event=>{
+    pullArmed=false;
+    if($('adminApp')?.classList.contains('hidden')||!isAtTop()||event.touches.length!==1)return;
+    pullStartY=event.touches[0].clientY;
+    pullDistance=0;
+    pullArmed=true;
   },{passive:true});
-  document.addEventListener('touchmove',e=>{
-    if(!start||e.touches.length!==1)return;
-    const dx=e.touches[0].clientX-start.x,dy=e.touches[0].clientY-start.y;
-    if(dy<=0||Math.abs(dx)>dy){start=null;ready=false;hint.style.display='none';return}
-    if(!atTop(start.target)){start=null;ready=false;hint.style.display='none';return}
-    if(dy>12&&e.cancelable)e.preventDefault();
-    if(dy>20){ready=dy>=75;show(ready?'Rilascia per aggiornare':'Trascina per aggiornare')}
+  window.addEventListener('touchmove',event=>{
+    if(!pullArmed||event.touches.length!==1)return;
+    pullDistance=event.touches[0].clientY-pullStartY;
+    if(pullDistance<=0){pullArmed=false;clear();return}
+    const ready=pullDistance>=THRESHOLD;
+    hint.classList.add('visible');
+    hint.classList.toggle('ready',ready);
+    hint.querySelector('span').textContent=ready?'Rilascia per aggiornare':'Trascina per aggiornare';
+    if(ready&&event.cancelable)event.preventDefault();
   },{passive:false});
-  document.addEventListener('touchcancel',()=>{start=null;ready=false;hint.style.display='none'});
-  document.addEventListener('touchend',async()=>{
-    if(!start)return;
-    start=null;
-    if(!ready){hint.style.display='none';return}
-    ready=false;
+  window.addEventListener('touchend',()=>{
+    if(!pullArmed)return;
+    const refresh=pullDistance>=THRESHOLD&&isAtTop();
+    pullArmed=false;pullDistance=0;clear();
+    if(!refresh)return;
     if(document.querySelector('.admin-save-state.dirty')){
-      show('Salva prima le modifiche');hide();return;
+      toast('Salva prima le modifiche per aggiornare');
+      return;
     }
-    busy=true;show('Aggiornamento…');
-    try{
-      const tab=document.querySelector('#tabs button.active')?.dataset.tab||sessionStorage.getItem(ADMIN_TAB_KEY);
-      if(tab==='calendar')document.querySelector('#tabs button[data-tab="calendar"]')?.click();
-      else if(tab==='birthdays')$('birthdayCalendarRefresh')?.click();
-      else if(tab==='seasons')await loadSeasons();
-      else if(tab==='settings'&&sessionStorage.getItem(ADMIN_SETTINGS_KEY)==='timers')await refreshTimerSetup();
-      else if(tab)await refreshAdminTab(tab);
-      show('Aggiornato');hide();
-    }catch(error){
-      console.error('Aggiornamento manuale:',error);
-      show('Aggiornamento non riuscito');hide();
-    }finally{busy=false}
+    window.location.reload();
   },{passive:true});
+  window.addEventListener('touchcancel',()=>{pullArmed=false;pullDistance=0;clear()},{passive:true});
 }
