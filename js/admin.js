@@ -643,7 +643,9 @@ async function loadRegistrations(){
   registrations=data||[];
   selectedRegistrationIds=new Set([...selectedRegistrationIds].filter(id=>registrations.some(r=>r.id===id)));
   renderRegistrations();renderStats();
+  document.dispatchEvent(new CustomEvent('juvenilia:registrations-updated'));
 }
+document.addEventListener('juvenilia:registration-detail-updated',()=>loadRegistrations());
 function sortedRegistrations(){
   const rows=[...registrations];
   if(registrationsSort==='category')return rows.sort((a,b)=>categoryOrderValue(categoryOf(a))-categoryOrderValue(categoryOf(b))||(categoryOf(a)||'').localeCompare(categoryOf(b)||'','it')||(a.athlete?.full_name||'').localeCompare(b.athlete?.full_name||'','it'));
