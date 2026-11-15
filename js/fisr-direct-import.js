@@ -64,7 +64,7 @@ function renderPreview(data){
   categories.append(block);
  }
  const actions=el('div',undefined,'actions');const prepare=el('button','Prepara gara nel gestionale');const cancel=el('button','Annulla','secondary');
- const status=el('p','Le prove saranno tutte confermate per impostazione predefinita. Solo l’amministratore potrà modificarle.','muted');
+ const status=el('p','Il programma FISR e i collegamenti agli iscritti saranno predisposti automaticamente. Le prove saranno tutte confermate per impostazione predefinita; solo l’amministratore potrà modificarle.','muted');
  actions.append(prepare,cancel);panel.append(heading,info,detail,categories,actions,status);
  const clear=()=>{sessionStorage.removeItem(KEY);panel.remove();previewPending=false};cancel.onclick=clear;
  const parseDate=value=>{const m=String(value||'').match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);if(!m)return '';const y=m[3]?(m[3].length===2?2000+Number(m[3]):Number(m[3])):new Date().getFullYear();const d=new Date(y,Number(m[2])-1,Number(m[1]));return d.getFullYear()===y&&d.getMonth()===Number(m[2])-1&&d.getDate()===Number(m[1])?`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:''};
