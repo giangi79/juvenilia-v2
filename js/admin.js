@@ -1174,3 +1174,56 @@ document.querySelector('[data-tab="timers"]')?.addEventListener('click',()=>{
 
 // Nessun caricamento automatico prima dell'autenticazione:
  // le scadenze vengono caricate solo dopo login Admin o quando si apre la scheda.
+
+
+/* Aggiornamento della sezione con trascinamento verso il basso su mobile. */
+{
+  const hint=document.createElement('div');
+  hint.setAttribute('role','status');
+  hint.setAttribute('aria-live','polite');
+  hint.style.cssText='position:fixed;z-index:2000;top:calc(8px + env(safe-area-inset-top, 0px));left:50%;transform:translateX(-50%);padding:8px 14px;border-radius:20px;background:#123d5d;color:#fff;font:700 14px Inter,sans-serif;box-shadow:0 2px 10px #0005;display:none;white-space:nowrap;pointer-events:none';
+  document.body.append(hint);
+  let start=null,ready=false,busy=false,hideTimer;
+  function show(message){clearTimeout(hideTimer);hint.textContent=message;hint.style.display='block'}
+  function hide(){clearTimeout(hideTimer);hideTimer=setTimeout(()=>{hint.style.display='none'},1200)}
+  function canStart(target){
+    if($('adminApp').classList.contains('hidden')||window.scrollY>0)return false;
+    if(target.closest('input,select,textarea,button,[contenteditable="true"]'))return false;
+    for(let el=target;el&&el!==document.body;el=el.parentElement){
+      const style=getComputedStyle(el);
+      if(/auto|scroll/.test(style.overflowY)&&el.scrollHeight>el.clientHeight&&el.scrollTop>0)return false;
+    }
+    return true;
+  }
+  document.addEventListener('touchstart',e=>{
+    if(busy||e.touches.length!==1||!canStart(e.target)){start=null;return}
+    start={x:e.touches[0].clientX,y:e.touches[0].clientY};ready=false;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!start||e.touches.length!==1||window.scrollY>0)return;
+    const dx=e.touches[0].clientX-start.x,dy=e.touches[0].clientY-start.y;
+    if(dy<=0||Math.abs(dx)>dy){start=null;hint.style.display='none';return}
+    if(dy>10&&e.cancelable)e.preventDefault();
+    if(dy>20){ready=dy>=85;show(ready?'Rilascia per aggiornare':'Trascina per aggiornare')}
+  },{passive:false});
+  document.addEventListener('touchcancel',()=>{start=null;ready=false;hint.style.display='none'});
+  document.addEventListener('touchend',async()=>{
+    if(!start)return;
+    start=null;
+    if(!ready){hint.style.display='none';return}
+    ready=false;
+    if(document.querySelector('.admin-save-state.dirty')){
+      show('Salva prima le modifiche');hide();return;
+    }
+    busy=true;show('Aggiornamento…');
+    try{
+      const tab=document.querySelector('#tabs button.active')?.dataset.tab;
+      if(tab==='calendar')document.querySelector('#tabs button[data-tab="calendar"]')?.click();
+      else if(tab==='birthdays')$('birthdayCalendarRefresh')?.click();
+      else if(tab==='seasons')await loadSeasons();
+      else if(tab==='settings'&&sessionStorage.getItem(ADMIN_SETTINGS_KEY)==='timers')await refreshTimerSetup();
+      else if(tab)await refreshAdminTab(tab);
+    }catch(error){console.error('Aggiornamento manuale:',error);show('Aggiornamento non riuscito');hide();busy=false;return}
+    hint.style.display='none';busy=false;
+  },{passive:true});
+}
