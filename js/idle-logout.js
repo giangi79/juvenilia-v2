@@ -3,6 +3,7 @@ import { db } from './supabase.js';
 // The timestamp is shared by Juvenilia tabs in this browser.
 const IDLE_LIMIT = 120000;
 const ACTIVITY_KEY = 'juvenilia_gare_last_activity_v1';
+const TIMEOUT_KEY = 'juvenilia_gare_timeout_v1';
 let authenticated = false;
 let initialized = false;
 let signingOut = false;
@@ -24,10 +25,12 @@ async function checkIdle() {
     return;
   }
   signingOut = true;
+  localStorage.setItem(TIMEOUT_KEY, String(Date.now()));
   try {
     const { error } = await db.auth.signOut({ scope: 'local' });
     if (error) throw error;
   } catch (error) {
+    localStorage.removeItem(TIMEOUT_KEY);
     signingOut = false;
     timer = setTimeout(checkIdle, 5000);
   }
@@ -64,10 +67,15 @@ db.auth.onAuthStateChange((event, session) => {
     localStorage.removeItem(ACTIVITY_KEY);
     // Remove administrator data that was already displayed in this tab.
     if (wasAuthenticated && document.getElementById('loginCard')) {
-      setTimeout(() => location.reload(), 0);
+      const timedOut = Date.now() - Number(localStorage.getItem(TIMEOUT_KEY) || 0) < 30000;
+      setTimeout(() => {
+        if (timedOut) location.replace('index.html');
+        else location.reload();
+      }, 0);
     }
   } else if (event === 'SIGNED_IN' && session && !authenticated) {
     authenticated = true;
+    localStorage.removeItem(TIMEOUT_KEY);
     lastWrite = Date.now();
     localStorage.setItem(ACTIVITY_KEY, String(lastWrite));
     schedule();
