@@ -3,7 +3,7 @@
   const sections=[
     {id:'athleteSearchAthletes',section:'athletes',root:'tab-athletes',lists:[['#athletesBody tr',0],['#birthdayImportPreview tbody tr',0]]},
     {id:'athleteSearchBirthdays',section:'birthdays',root:'tab-birthdays',lists:[['#birthdayCalendarBody tr',1]]},
-    {id:'athleteSearchRegistrations',section:'registrations',root:'tab-registrations',lists:[['#registrationsBody tr',1],['#fisrAthleteProves .fisr-athlete-row','summary']]},
+    {id:'athleteSearchRegistrations',section:'registrations',root:'tab-registrations',lists:[['#registrationsBody tr',1],['#fisrAthleteProves .fisr-athlete-row','summary'],['#advRegistrationsBody tr',0]]},
     {id:'athleteSearchAdvanced',section:'advanced',root:'tab-advanced',lists:[['#advRegistrationsBody tr',0]]}
   ];
   for(const config of sections){
