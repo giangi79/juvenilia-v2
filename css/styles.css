@@ -4568,3 +4568,80 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
     line-height:1.2!important;
   }
 }
+
+/* Dettagli iscrizioni: schede compatte su telefono e tablet. */
+@media(max-width:1100px){
+  #tab-advanced .advanced-registrations-table{
+    overflow:visible!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  #tab-advanced .advanced-registrations-table table,
+  #advRegistrationsBody{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    background:transparent!important;
+  }
+  #tab-advanced .advanced-registrations-table thead{display:none!important}
+  #advRegistrationsBody tr{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:0!important;
+    margin:0 0 10px!important;
+    border:1px solid #4c6377!important;
+    border-radius:14px!important;
+    overflow:hidden!important;
+  }
+  #advRegistrationsBody td{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:center!important;
+    gap:3px!important;
+    box-sizing:border-box!important;
+    min-width:0!important;
+    width:100%!important;
+    padding:6px 8px!important;
+    border-bottom:1px solid #3e5367!important;
+    line-height:1.25!important;
+    text-align:left!important;
+  }
+  #advRegistrationsBody td::before{
+    display:block!important;
+    position:static!important;
+    color:#a8dadc!important;
+    font-size:.66rem!important;
+    font-weight:900!important;
+    line-height:1.15!important;
+    text-transform:uppercase!important;
+    letter-spacing:.04em!important;
+  }
+  #advRegistrationsBody td:nth-child(1){
+    grid-column:1/-1!important;
+    padding:8px 10px!important;
+    font-size:.95rem!important;
+    font-weight:900!important;
+  }
+  #advRegistrationsBody td:nth-child(1)::before{content:none!important;display:none!important}
+  #advRegistrationsBody td:nth-child(2)::before{content:"Categoria gara"}
+  #advRegistrationsBody td:nth-child(3)::before{content:"Giornata"}
+  #advRegistrationsBody td:nth-child(4)::before{content:"Stato"}
+  #advRegistrationsBody td:nth-child(5)::before{content:"Accompagnatore"}
+  #advRegistrationsBody td:nth-child(6){grid-column:1/-1!important;border-bottom:0!important}
+  #advRegistrationsBody td:nth-child(6)::before{content:"Blocco"}
+  #advRegistrationsBody select,
+  #advRegistrationsBody input,
+  #advRegistrationsBody button{
+    box-sizing:border-box!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    min-height:44px!important;
+    margin:0!important;
+    padding:7px!important;
+    font-size:16px!important;
+  }
+}
