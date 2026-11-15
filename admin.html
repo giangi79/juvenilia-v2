@@ -44,19 +44,21 @@
 <section id="tab-athletes" class="tab card hidden"><h2>Archivio atleti</h2><div class="form-grid"><label>Cognome e Nome<input id="athleteName"></label><label>Categoria<select id="athleteCategory"><option value="">Seleziona categoria</option><option>GIOVANISSIMI</option><option>ESORDIENTI</option><option>R12</option><option>RAGAZZI</option><option>ALLIEVI</option><option>JUNIOR</option><option>SENIOR</option></select></label><label>Sesso<select id="athleteGender"><option value="">-</option><option>M</option><option>F</option></select></label><label>Data di nascita (solo admin)<input id="athleteBirthDate" type="date"></label><label>Numero gara (facoltativo)<input id="athleteRaceNumber" type="number" min="1" step="1" inputmode="numeric" placeholder="Lascia vuoto se non noto"></label><label>Matricola (facoltativa)<input id="athleteMembershipNumber" type="text" inputmode="numeric" autocomplete="off" placeholder="Lascia vuoto se non nota"></label></div><button id="addAthleteBtn">Aggiungi atleta</button><div class="table-wrap"><table><thead><tr><th>Atleta</th><th>Categoria</th><th>Sesso</th><th>Compleanno (solo admin)</th><th>Numero gara</th><th>Matricola</th><th>Attivo</th><th>Azioni</th></tr></thead><tbody id="athletesBody"></tbody></table></div><div class="birthday-import card"><h3>Importa compleanni</h3><p>Seleziona il foglio dei tesserati. L’anteprima controlla i nomi e segnala i casi incerti; nessuna modifica avviene finché non premi Importa.</p><input id="birthdayFile" type="file" accept=".xlsx,.xls"><div id="birthdayImportPreview" aria-live="polite"></div><button id="birthdayImportApply" type="button" class="secondary hidden">Importa corrispondenze sicure</button></div><div class="birthday-import card"><h3>Promemoria Telegram</h3><p>Invia un esempio alla chat configurata, senza usare i dati di un atleta.</p><button id="birthdayTestBtn" type="button" class="secondary">Invia test compleanno</button><p id="birthdayTestResult" role="status" aria-live="polite"></p></div></section>
 <section id="tab-birthdays" class="tab card hidden"><div class="birthday-calendar-head"><div><h2><i class="fas fa-cake-candles"></i> Calendario compleanni</h2><p class="muted">Solo gli atleti attivi della stagione attuale. Le date restano visibili esclusivamente nell’area admin.</p></div><div class="birthday-calendar-controls"><label>Periodo da visualizzare<select id="birthdayCalendarRange"><option value="30">Prossimi 30 giorni</option><option value="90" selected>Prossimi 90 giorni</option><option value="365">Tutto l’anno</option></select></label><button id="birthdayCalendarRefresh" type="button" class="secondary"><i class="fas fa-rotate"></i> Aggiorna</button></div></div><div id="birthdayCalendarStats" class="birthday-calendar-stats"></div><p id="birthdayCalendarState" class="muted" role="status" aria-live="polite">Apri la sezione per caricare i compleanni.</p><div class="table-wrap birthday-calendar-table"><table><thead><tr><th>Data</th><th>Atleta</th><th>Categoria</th><th>Compie</th><th>Quando</th></tr></thead><tbody id="birthdayCalendarBody"></tbody></table></div></section>\n<section id="tab-registrations" class="tab card hidden">
 <h2>Iscrizioni alla gara</h2>
-<div class="section-event-picker registrations-event-picker"><label>Gara<select id="registrationsEventSelect"></select></label></div>
+<div class="registrations-control-panel">
+<div class="section-event-picker registrations-event-picker"><label><span class="registration-field-label"><i class="fas fa-flag-checkered"></i> Gara</span><select id="registrationsEventSelect"></select></label></div>
 <div class="registrations-quick-actions">
-<button id="enrollAllBtn" type="button" class="registrations-enroll">Aggiungi tutti gli atleti attivi</button>
-<button id="resetRegistrationsBtn" type="button" class="danger">Reset scelte</button>
-<button id="unlockAllBtn" type="button">Sblocca tutti</button>
+<button id="enrollAllBtn" type="button" class="registrations-enroll"><i class="fas fa-user-plus" aria-hidden="true"></i><span>Aggiungi tutti gli atleti attivi</span></button>
+<button id="resetRegistrationsBtn" type="button" class="danger"><i class="fas fa-rotate" aria-hidden="true"></i><span>Reset scelte</span></button>
+<button id="unlockAllBtn" type="button"><i class="fas fa-lock-open" aria-hidden="true"></i><span>Sblocca tutti</span></button>
 </div>
 <div class="registration-tools registrations-compact-tools">
-<label>Ordina per<select id="registrationsSort"><option value="name">Atleta A-Z</option><option value="category">Categoria</option><option value="status">Stato</option></select></label>
+<label><span class="registration-field-label"><i class="fas fa-arrow-down-a-z" aria-hidden="true"></i> Ordina per</span><select id="registrationsSort"><option value="name">Atleta A-Z</option><option value="category">Categoria</option><option value="status">Stato</option></select></label>
+</div>
 <div class="actions registrations-selected-actions">
-<button id="unlockSelectedBtn" type="button">Sblocca selezionati</button>
-<button id="lockSelectedBtn" type="button" class="danger">Blocca selezionati</button>
-<button id="resetSelectedBtn" type="button" class="danger">Reset selezionati</button>
-<button id="clearSelectionBtn" type="button" class="secondary">Deseleziona</button>
+<button id="unlockSelectedBtn" type="button"><i class="fas fa-lock-open" aria-hidden="true"></i><span>Sblocca selezionati</span></button>
+<button id="lockSelectedBtn" type="button" class="danger"><i class="fas fa-lock" aria-hidden="true"></i><span>Blocca selezionati</span></button>
+<button id="resetSelectedBtn" type="button" class="danger"><i class="fas fa-rotate" aria-hidden="true"></i><span>Reset selezionati</span></button>
+<button id="clearSelectionBtn" type="button" class="secondary"><i class="fas fa-xmark" aria-hidden="true"></i><span>Deseleziona</span></button>
 </div></div>
 <div class="table-wrap"><table><thead><tr><th><input id="selectAllRegistrations" type="checkbox"></th><th>Atleta</th><th>Categoria</th><th>Stato</th><th>Accompagnatore</th><th>Bloccato</th><th>Azioni</th></tr></thead><tbody id="registrationsBody"></tbody></table></div></section>
 
