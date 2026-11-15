@@ -650,10 +650,17 @@ function sortedRegistrations(){
   if(registrationsSort==='status'){const order={yes:0,pending:1,no:2};return rows.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)||(a.athlete?.full_name||'').localeCompare(b.athlete?.full_name||'','it'))}
   return rows.sort((a,b)=>(a.athlete?.full_name||'').localeCompare(b.athlete?.full_name||'','it'));
 }
+function visibleRegistrationRows(){
+  const query=(document.getElementById('athleteSearchRegistrations')?.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('it').trim();
+  return registrations.filter(r=>String(r.athlete?.full_name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('it').includes(query));
+}
 function refreshSelectAllRegistrationState(){
   const all=$('selectAllRegistrations');if(!all)return;
-  all.checked=registrations.length>0&&registrations.every(r=>selectedRegistrationIds.has(r.id));
-  all.indeterminate=selectedRegistrationIds.size>0&&!all.checked;
+  const visible=visibleRegistrationRows(),selected=visible.filter(r=>selectedRegistrationIds.has(r.id)).length;
+  all.checked=visible.length>0&&selected===visible.length;
+  all.indeterminate=selected>0&&!all.checked;
+  const note=$('athleteSearchSelection');
+  if(note)note.textContent=selectedRegistrationIds.size?'Selezionati in totale: '+selectedRegistrationIds.size+(selectedRegistrationIds.size>selected?' (anche fuori dalla ricerca)':''):'';
 }
 function renderRegistrations(){
   $('registrationsBody').replaceChildren();if($('registrationsSort'))$('registrationsSort').value=registrationsSort;
@@ -672,7 +679,8 @@ function renderRegistrations(){
 }
 $('registrationsSort').value=registrationsSort;
 $('registrationsSort').onchange=()=>{registrationsSort=$('registrationsSort').value;localStorage.setItem('juvenilia_registrations_sort',registrationsSort);renderRegistrations()};
-$('selectAllRegistrations').onchange=()=>{if($('selectAllRegistrations').checked)registrations.forEach(r=>selectedRegistrationIds.add(r.id));else selectedRegistrationIds.clear();renderRegistrations()};
+$('selectAllRegistrations').onchange=()=>{const checked=$('selectAllRegistrations').checked;visibleRegistrationRows().forEach(r=>checked?selectedRegistrationIds.add(r.id):selectedRegistrationIds.delete(r.id));renderRegistrations()};
+document.addEventListener('juvenilia:athlete-search-change',event=>{if(event.detail?.section==='registrations')refreshSelectAllRegistrationState()});
 $('clearSelectionBtn').onclick=()=>{selectedRegistrationIds.clear();renderRegistrations()};
 async function setSelectedLock(value){
   const ids=[...selectedRegistrationIds];if(!currentEvent)return toast('Seleziona una gara');if(!ids.length)return toast('Seleziona almeno un atleta');
