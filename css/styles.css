@@ -4510,3 +4510,10 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
 .admin-athlete-search-count:empty,.admin-athlete-search-selection:empty{display:none}
 .admin-athlete-search-selection{font-weight:800;color:#ffdfaa}
 #adminApp .admin-athlete-search-hidden{display:none!important}
+
+/* La ricerca resta ancorata alla finestra mentre scorrono gli elenchi. */
+@supports (overflow:clip){
+  html:has(#adminApp),body:has(#adminApp){overflow-x:clip!important}
+}
+#tab-athletes,#tab-birthdays,#tab-registrations,#tab-settings,#tab-advanced{overflow:visible!important}
+#adminApp .admin-athlete-search{top:calc(8px + env(safe-area-inset-top, 0px));z-index:1050}
