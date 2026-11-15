@@ -4384,3 +4384,23 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
 .quick-fisr-proves span{font-weight:500;overflow-wrap:anywhere}
 .quick-registration-result .quick-fisr-proves{width:100%;box-sizing:border-box;margin-top:5px}
 .quick-registration-confirm-dialog .quick-fisr-proves{margin-bottom:12px}
+
+
+/* Admin - iscrizioni alla gara: controlli compatti e touch-friendly. */
+#tab-registrations .registrations-event-picker{margin:8px 0 10px;padding:8px 10px}
+#tab-registrations .registrations-event-picker label{width:100%;max-width:none}
+#tab-registrations .registrations-event-picker select{margin-top:4px}
+#tab-registrations .registrations-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 10px}
+#tab-registrations .registrations-quick-actions .registrations-enroll{grid-column:1/-1}
+#tab-registrations .registrations-quick-actions button,
+#tab-registrations .registrations-selected-actions button{min-width:0;min-height:44px;padding:9px 10px;margin:0;white-space:normal;line-height:1.2;font-size:.9rem}
+#tab-registrations .registrations-compact-tools{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 10px;padding:10px}
+#tab-registrations .registrations-compact-tools>label{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;min-width:0;margin:0}
+#tab-registrations .registrations-compact-tools>label select{width:100%;min-width:0;margin:0}
+#tab-registrations .registrations-selected-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+#tab-registrations .table-wrap{margin-top:10px}
+@media(max-width:380px){
+  #tab-registrations .registrations-quick-actions button,
+  #tab-registrations .registrations-selected-actions button{font-size:.78rem;padding:8px 6px}
+  #tab-registrations .registrations-compact-tools>label{grid-template-columns:1fr;gap:4px}
+}
