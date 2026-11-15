@@ -13,7 +13,34 @@ if(admin){
     return button;
   };
   controls.append(makeButton('Vai in cima','m5 14 7-7 7 7',false),makeButton('Vai in fondo','m5 10 7 7 7-7',true));
-  const syncVisibility=()=>{controls.style.display=admin.classList.contains('hidden')?'none':'flex'};
+  const syncPosition=()=>{
+    const dock=document.getElementById('adminMobileSaveDock');
+    const rect=dock?.getBoundingClientRect();
+    const visible=rect&&rect.width>0&&rect.height>0&&rect.top<window.innerHeight&&rect.bottom>0;
+    controls.style.bottom=visible
+      ? Math.max(12,Math.ceil(window.innerHeight-rect.top+12))+'px'
+      : 'calc(12px + env(safe-area-inset-bottom, 0px))';
+  };
+  let observedDock=null;
+  const resizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(syncPosition):null;
+  const observeDock=()=>{
+    const dock=document.getElementById('adminMobileSaveDock');
+    if(dock!==observedDock){
+      if(observedDock)resizeObserver?.unobserve(observedDock);
+      observedDock=dock;
+      if(dock)resizeObserver?.observe(dock);
+    }
+    syncPosition();
+  };
+  const syncVisibility=()=>{
+    controls.style.display=admin.classList.contains('hidden')?'none':'flex';
+    observeDock();
+  };
   new MutationObserver(syncVisibility).observe(admin,{attributes:true,attributeFilter:['class']});
+  new MutationObserver(records=>{
+    if(records.some(record=>record.type==='childList'||record.target.id==='adminMobileSaveDock'))observeDock();
+  }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
+  window.addEventListener('resize',syncPosition);
+  window.visualViewport?.addEventListener('resize',syncPosition);
   syncVisibility();document.body.append(controls);
 }
