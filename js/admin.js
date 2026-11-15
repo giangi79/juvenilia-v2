@@ -396,6 +396,9 @@ document.addEventListener('juvenilia:create-from-calendar',event=>{
   setTimeout(()=>{
     if(!calendarDraft)return;
     $('eventLocationInput').value=calendarDraft.location||'';
+    const fisrId=String(calendarDraft.fisr?.id_fisr||'');
+    $('eventProgramUrlInput').value=/^\d{1,12}$/.test(fisrId)?`https://www.fisr.info/attivita/corsa_trofeo_modulo.php?id_manif=${encodeURIComponent(fisrId)}`:'';
+    $('eventProgramUrlInput').dispatchEvent(new Event('input',{bubbles:true}));
     $('eventStartDateInput').value=calendarDraft.start_date||'';
     $('eventEndDateInput').value=calendarDraft.end_date||'';
     if(Array.isArray(calendarDraft.categories)&&calendarDraft.categories.length){
