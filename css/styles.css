@@ -4404,3 +4404,32 @@ body::before,body.dark::before,html.dark body::before,[data-theme="dark"] body::
   #tab-registrations .registrations-selected-actions button{font-size:.78rem;padding:8px 6px}
   #tab-registrations .registrations-compact-tools>label{grid-template-columns:1fr;gap:4px}
 }
+
+
+/* Iscrizioni Admin - disposizione fedele al riferimento approvato. */
+#tab-registrations .registrations-control-panel{padding:12px;border:1px solid #416782;border-radius:18px;background:rgba(7,30,50,.24)}
+#tab-registrations .registrations-event-picker{margin:0 0 12px;padding:10px 12px;border:1px solid #416782;border-radius:15px;background:rgba(10,35,56,.38)}
+#tab-registrations .registrations-event-picker label{display:grid;grid-template-columns:minmax(90px, .32fr) minmax(0,1fr);align-items:center;gap:10px;width:100%;max-width:none}
+#tab-registrations .registrations-event-picker label::before{content:none}
+#tab-registrations .registration-field-label{display:inline-flex;align-items:center;gap:8px;font-weight:800;white-space:nowrap}
+#tab-registrations .registrations-event-picker select{margin:0;min-width:0;width:100%}
+#tab-registrations .registrations-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0 0 12px}
+#tab-registrations .registrations-quick-actions .registrations-enroll{grid-column:1/-1}
+#tab-registrations .registrations-quick-actions button,
+#tab-registrations .registrations-selected-actions button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:46px;padding:9px 10px;margin:0;white-space:normal;line-height:1.15;font-size:.88rem;font-weight:800;border-radius:13px}
+#tab-registrations .registrations-quick-actions button i,
+#tab-registrations .registrations-selected-actions button i{flex:0 0 auto;font-size:1.05em}
+#tab-registrations .registrations-compact-tools{display:block;margin:0 0 10px;padding:11px 8px 0;border:0;border-top:2px solid rgba(180,215,235,.6);border-radius:0;background:transparent}
+#tab-registrations .registrations-compact-tools>label{display:grid;grid-template-columns:minmax(100px,.42fr) minmax(0,1fr);align-items:center;gap:10px;margin:0;min-width:0}
+#tab-registrations .registrations-compact-tools>label select{width:100%;min-width:0;margin:0}
+#tab-registrations .registrations-selected-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0}
+#tab-registrations .table-wrap{margin-top:12px}
+@media(max-width:400px){
+ #tab-registrations .registrations-control-panel{padding:9px}
+ #tab-registrations .registrations-event-picker{padding:8px}
+ #tab-registrations .registrations-event-picker label{grid-template-columns:72px minmax(0,1fr);gap:6px}
+ #tab-registrations .registrations-compact-tools>label{grid-template-columns:105px minmax(0,1fr);gap:6px}
+ #tab-registrations .registrations-quick-actions button,
+ #tab-registrations .registrations-selected-actions button{font-size:.76rem;padding:8px 5px;gap:5px}
+ #tab-registrations .registrations-selected-actions button i{font-size:.9em}
+}
