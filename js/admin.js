@@ -637,13 +637,16 @@ $('addAthleteBtn').onclick=async()=>{
   $('athleteName').value='';$('athleteBirthDate').value='';$('athleteRaceNumber').value='';$('athleteMembershipNumber').value='';toast(`${same?'Atleta aggiunto alla stagione':'Nuovo atleta aggiunto'}${added?` e inserito in ${added} gare`:''}`);await loadAthletes();
 };
 
+let registrationsLoadedEventId=null;
 async function loadRegistrations(){
+  registrationsLoadedEventId=null;
   if(!currentEvent){registrations=[];selectedRegistrationIds.clear();renderRegistrations();return}
   const requestedEventId=currentEvent.id;
   const {data,error}=await db.from('v2_event_registrations').select('*, athlete:v2_athletes(*)').eq('event_id',requestedEventId).order('created_at');
   if(currentEvent?.id!==requestedEventId)return;
   if(error)return toast(error.message);
   registrations=data||[];
+  registrationsLoadedEventId=requestedEventId;
   selectedRegistrationIds=new Set([...selectedRegistrationIds].filter(id=>registrations.some(r=>r.id===id)));
   renderRegistrations();renderStats();
   document.dispatchEvent(new CustomEvent('juvenilia:registrations-updated'));
@@ -753,6 +756,39 @@ $('saveConfigBtn').onclick=async()=>{
 };
 
 function categoryOf(r){return r.category_override||r.category_snapshot||r.athlete?.category||''}
+function formatConfirmedRegistrations(event, rows){
+  const confirmed=rows.filter(r=>r.status==='yes' && clean(r.athlete?.full_name));
+  confirmed.sort((a,b)=>categoryOrderValue(categoryOf(a))-categoryOrderValue(categoryOf(b)) || categoryOf(a).localeCompare(categoryOf(b),'it') || clean(a.athlete.full_name).localeCompare(clean(b.athlete.full_name),'it'));
+  const lines=[event.title||'Gara','Iscritti Juvenilia',''];
+  let lastCategory=null;
+  for(const r of confirmed){
+    const category=clean(categoryOf(r))||'SENZA CATEGORIA';
+    if(category!==lastCategory){if(lastCategory!==null)lines.push('');lines.push(category);lastCategory=category}
+    lines.push('• '+clean(r.athlete.full_name));
+  }
+  lines.push('','Totale iscritti: '+confirmed.length);
+  return {text:lines.join('\n'),count:confirmed.length};
+}
+$('copyConfirmedRegistrationsBtn').onclick=async()=>{
+  if(!currentEvent)return toast('Seleziona prima una gara');
+  if(registrationsLoadedEventId!==currentEvent.id)return toast('Attendi il caricamento delle iscrizioni');
+  const result=formatConfirmedRegistrations(currentEvent,registrations);
+  if(!result.count)return toast('Nessun partecipante confermato per questa gara');
+  const fallback=$('copyRegistrationsFallback'),field=$('copyRegistrationsText');
+  fallback.hidden=true;
+  try{
+    if(!navigator.clipboard?.writeText)throw new Error('Appunti non disponibili');
+    await navigator.clipboard.writeText(result.text);
+    toast('Lista copiata: '+result.count+' iscritti');
+  }catch{
+    field.value=result.text;
+    fallback.hidden=false;
+    field.focus();
+    field.select();
+    toast('Seleziona e copia il testo mostrato');
+  }
+};
+
 function costOf(r){const n=Number(cfg('category_costs',{})[categoryOf(r)]||0);return Number.isFinite(n)?n:0}
 function raceDayOf(r){return r.race_day||''}
 
